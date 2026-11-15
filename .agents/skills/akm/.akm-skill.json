@@ -1,0 +1,32 @@
+{
+  "tool": "0.3.4-0.20261110012025-0ed3e561983e",
+  "files": {
+    "SKILL.md": "7238ccf80fa4c5f3da0bca4b78d510ac9942310ddfe1507942943dc17f913fc8",
+    "references/bases.md": "15409017d640b21c44cca930367aeea5364d28fcddf11184f78ea72b73c38e9f",
+    "references/board.md": "74774cc494522d4a8d33b6b5229e94de50a837a14c27f10a81908dea433ef30e",
+    "references/check.md": "7b2fc474b4d82094ae8270276b86077dde0e5840c856ed22ccc23367a567bdeb",
+    "references/claim.md": "ad46784f95fc91423f82c9a2f60223d3222568d1766907c6ef4381d4923656b5",
+    "references/close.md": "73da44a11b9dd25089723cc580a2855eb537a3fa6f09539c6d69d9f2bedb1a87",
+    "references/commits.md": "46047b1ea93c67b4c76bf5664eb10571d03f00089c4f86f1489fae85b1cffbee",
+    "references/config.md": "6a7781c5dfd691b8fc91c9424133d8a4413be9797e0f355b3c8a65ccd8af242f",
+    "references/find.md": "8c5d56e22be208a259bb6cb25f15e373b18716f1e4c5abaaba67187efee431d8",
+    "references/history.md": "45a633df82e3894a3b981fa44e925d5209c12dc6a1a61166fe6d17a5efa705b9",
+    "references/index.md": "85d7cdf687b9475e419d616f323bd4fcd726578b5a03092d8b1516ac9b28a1dd",
+    "references/init.md": "c3469e2827cf659355d41df1e38bf88452c63db0e2dacdcabba81ce60dcdc0de",
+    "references/log.md": "d861540841ef21361944b580aced9d7de83907cbc1b12f8b3f01439c1be76ff3",
+    "references/ls.md": "6f91a50dc1e14c0288c2ceac369e054ca63217a839f721a4c2746aaa04fb18bf",
+    "references/migrate.md": "84d0a2aa8b28e78e8d05eac48871cdb381a9e200ccebbf9b644e4340f0325841",
+    "references/new.md": "afff030ebfda035a4116a0aac07e55f9173a4e372027ee384ad03f6f0ab44381",
+    "references/preview.md": "82b13f2b19cd4823e25b92e556ff233fb31f012a4b6a831270e952d723e99089",
+    "references/release.md": "177469167faa68045e03f2f790aa6fe0be651478ce456620cb334794a3b47897",
+    "references/remove.md": "aeee00b670deae03afc66a5c35f704d6c1c17c649207552c9db11011a7656337",
+    "references/search.md": "9c5f1f73df84fec3101adf9349abba757ea26f3248440634a7a6256159c9a79a",
+    "references/section.md": "04c617973eb0c4da479e22782848a2828c51630c394ec8b3bd52ea7f09bfd45d",
+    "references/set.md": "09ebb1c33ba59b35cbd0e5668ab8d735f0b679e6aa643b8486cb6422d39bbe87",
+    "references/show.md": "c58f25fcac7f652c182c21e8ea4913430e21a8d9b4892d2deeaac5a7c40e02bc",
+    "references/skills.md": "38c548e3fac3e22463f190fbca68244c943d2c7ffd40fedd570d02c2c7bdb6b8",
+    "references/tick.md": "17b2cc0c45aa1b2931b049b7d24c3404fb265aa3f56dd5457f4a94baaadef900",
+    "references/version.md": "67851db257845abafb2ce12bbaff19cb1bc212a5c3cad9722c6eb7841afeeca8",
+    "references/when.md": "f5004ab0b11a45ec149d36e8cd52a405c8e7b7b95ddf13c9adb9eebcfc11711c"
+  }
+}

@@ -1,0 +1,2 @@
+# the advisory lock akmctl takes while it writes
+docs/.akm.lock
