@@ -4,9 +4,11 @@ A Go command-line tool and terminal UI for running a Zettelkasten slip box in an
 
 ## Commands
 
+- Build: `go build -o zk .`; install: `go install .`.
+- Test: `go test ./...`; vet: `go vet ./...`; format: `gofmt -l .` must print nothing.
 - Records check: `akmctl check`; `akmctl index` regenerates `docs/adr/README.md`.
 - Format records: `npx prettier@<pinned version> --check AGENTS.md "docs/**/*.md"` (pin the version you use).
-- Full check before a commit: `akmctl check` and the format command above.
+- Full check before a commit: `gofmt -l .`, `go vet ./...`, `go test ./...`, `akmctl check` and the format command above.
 
 ## Where things live
 

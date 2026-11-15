@@ -15,7 +15,7 @@ summary: "Replace the slip proof of concept with zk: design, CLI, box spec, comm
 Replace the Python `slip` proof of concept with `zk`, so Alexander's slip box can move into his main Obsidian vault. Children, in order:
 
 - [Draft the zk design ADRs](done/261115-q0r0-design-adrs.md): the contract for the rest.
-- [Build the CLI skeleton, user config and box resolution](261115-ytjf-cli-skeleton-and-box-resolution.md)
+- [Build the CLI skeleton, user config and box resolution](done/261115-ytjf-cli-skeleton-and-box-resolution.md)
 - [Read the box spec and apply the field mapping](261115-ahma-box-spec-and-field-mapping.md)
 - [Port the slip commands to zk](261115-wfyq-card-commands-at-parity.md)
 - [Build the demo vault and the parity suite](261115-823p-demo-vault-and-parity-suite.md)
@@ -30,7 +30,7 @@ Done when:
 
 ## Next
 
-Work the next child, 261115-ytjf (CLI skeleton, user config and box resolution).
+Work the next child, 261115-ahma (box spec and field mapping).
 
 ## Log
 
