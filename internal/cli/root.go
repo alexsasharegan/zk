@@ -8,9 +8,12 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 
+	"github.com/alexsasharegan/zk/internal/box"
 	"github.com/alexsasharegan/zk/internal/config"
 )
 
@@ -47,8 +50,13 @@ type App struct {
 	Out, Err io.Writer
 	// Env returns the environment; tests replace it.
 	Env func() (config.Env, error)
+	// Now is the clock; tests replace it.
+	Now func() time.Time
+	// Terminal reports whether stdin and stdout are both terminals.
+	Terminal func() bool
 
-	box string // --box
+	box     string // --box
+	noInput bool   // --no-input
 }
 
 // NewRoot builds the command tree.
@@ -73,9 +81,44 @@ With every argument given, zk never prompts, so scripts and agents can call it.`
 	root.SetVersionTemplate("zk {{.Version}}\n")
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error { return UsageError{err} })
 	root.PersistentFlags().StringVar(&app.box, "box", "", "the box to act on: a name from the user config, or a path to a box's spec or its folder")
+	root.PersistentFlags().BoolVar(&app.noInput, "no-input", false, "never prompt, even on a terminal (also ZK_NO_INPUT=1)")
 
-	root.AddCommand(newVersionCmd(), newConfigCmd(app))
+	root.AddCommand(newVersionCmd(), newConfigCmd(app),
+		newNewCmd(app), newListCmd(app), newShowCmd(app), newRetitleCmd(app),
+		newCheckCmd(app), newFixCmd(app), newSourceCmd(app))
 	return root
+}
+
+// Interactive reports whether a command may prompt: stdin and stdout are
+// terminals, and neither --no-input nor ZK_NO_INPUT=1 says otherwise
+// (ADR 261115-czb2).
+func (app *App) Interactive() bool {
+	if app.noInput || app.Terminal == nil || !app.Terminal() {
+		return false
+	}
+	env, err := app.Env()
+	return err == nil && env.Getenv("ZK_NO_INPUT") != "1"
+}
+
+// Open resolves the box, loads its spec and reads its notes.
+func (app *App) Open() (*box.Store, error) {
+	env, err := app.Env()
+	if err != nil {
+		return nil, err
+	}
+	user, err := config.LoadUser(env)
+	if err != nil {
+		return nil, err
+	}
+	r, err := config.Resolve(env, user, app.box)
+	if err != nil {
+		return nil, err
+	}
+	spec, err := box.Load(r.Spec)
+	if err != nil {
+		return nil, err
+	}
+	return box.Open(spec)
 }
 
 // noArgs is cobra.NoArgs, reported as a usage error.
@@ -100,7 +143,9 @@ func newVersionCmd() *cobra.Command {
 
 // Execute runs zk with the process's arguments and returns the exit code.
 func Execute() int {
-	app := &App{Out: os.Stdout, Err: os.Stderr, Env: config.OSEnv}
+	app := &App{Out: os.Stdout, Err: os.Stderr, Env: config.OSEnv, Now: time.Now, Terminal: func() bool {
+		return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
+	}}
 	return Run(app, os.Args[1:])
 }
 
@@ -112,9 +157,13 @@ func Run(app *App, args []string) int {
 	if err == nil {
 		return ExitOK
 	}
+	if errors.Is(err, errFindings) {
+		return ExitFail // the findings are already printed
+	}
 	fmt.Fprintf(app.Err, "zk: %v\n", err)
 	var usage UsageError
-	if errors.As(err, &usage) || isCobraUsage(err) {
+	var arg box.ArgError
+	if errors.As(err, &usage) || errors.As(err, &arg) || isCobraUsage(err) {
 		return ExitUsage
 	}
 	return ExitFail
