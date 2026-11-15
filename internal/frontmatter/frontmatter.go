@@ -150,6 +150,23 @@ func (d *Doc) Update(fn func(map[string]any)) error {
 	return nil
 }
 
+// Append adds a field at the end, or replaces its value where it is. Use it
+// to build a new note's fields in a chosen order.
+func (d *Doc) Append(name string, v any) error {
+	n, err := encode(v)
+	if err != nil {
+		return fmt.Errorf("front matter %s: %w", name, err)
+	}
+	for i := 0; i+1 < len(d.root.Content); i += 2 {
+		if d.root.Content[i].Value == name {
+			d.root.Content[i+1] = n
+			return nil
+		}
+	}
+	d.root.Content = append(d.root.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: name}, n)
+	return nil
+}
+
 // same reports whether a new value would decode to the old one, so an
 // unchanged field keeps its exact text.
 func same(old, nv any) bool {
@@ -175,8 +192,14 @@ func keepStyle(old, n *yaml.Node) {
 	}
 }
 
+// Quoted is text always written in double quotes, such as a card key, so
+// Obsidian reads "7" or "2a1" as text and every key looks the same.
+type Quoted string
+
 func encode(v any) (*yaml.Node, error) {
 	switch v := v.(type) {
+	case Quoted:
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: string(v), Style: yaml.DoubleQuotedStyle}, nil
 	case Plain:
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.PlainScalar()}, nil
 	case []string:
