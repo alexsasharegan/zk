@@ -265,7 +265,11 @@ func (s *Store) SourceDone(slug string, keys []string) ([]string, error) {
 			return
 		}
 		fm[m.Field("status").Name] = "extracted"
-		fm[m.Field("extracted").Name] = merged
+		quoted := make([]frontmatter.Quoted, len(merged))
+		for i, k := range merged {
+			quoted[i] = frontmatter.Quoted(k)
+		}
+		fm[m.Field("extracted").Name] = quoted
 	})
 	if err == nil {
 		err = readErr

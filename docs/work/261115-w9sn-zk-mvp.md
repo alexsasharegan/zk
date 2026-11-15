@@ -18,7 +18,7 @@ Replace the Python `slip` proof of concept with `zk`, so Alexander's slip box ca
 - [Build the CLI skeleton, user config and box resolution](done/261115-ytjf-cli-skeleton-and-box-resolution.md)
 - [Read the box spec and apply the field mapping](done/261115-ahma-box-spec-and-field-mapping.md)
 - [Port the slip commands to zk](done/261115-wfyq-card-commands-at-parity.md)
-- [Build the demo vault and the parity suite](261115-823p-demo-vault-and-parity-suite.md)
+- [Build the demo vault and the parity suite](done/261115-823p-demo-vault-and-parity-suite.md)
 - [Build the zk new terminal UI](261115-ct75-tui-new.md)
 
 Migrating his own box is tracked outside this repository, after this.
@@ -30,7 +30,7 @@ Done when:
 
 ## Next
 
-Work the next child, 261115-823p (demo vault and parity suite).
+Work the last child, 261115-ct75 (the zk new terminal UI).
 
 ## Log
 

@@ -202,6 +202,13 @@ func encode(v any) (*yaml.Node, error) {
 		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: string(v), Style: yaml.DoubleQuotedStyle}, nil
 	case Plain:
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.PlainScalar()}, nil
+	case []Quoted:
+		seq := &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq"}
+		for _, q := range v {
+			n, _ := encode(q)
+			seq.Content = append(seq.Content, n)
+		}
+		return seq, nil
 	case []string:
 		seq := &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq"}
 		for _, s := range v {
