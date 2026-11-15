@@ -16,7 +16,7 @@ Replace the Python `slip` proof of concept with `zk`, so Alexander's slip box ca
 
 - [Draft the zk design ADRs](done/261115-q0r0-design-adrs.md): the contract for the rest.
 - [Build the CLI skeleton, user config and box resolution](done/261115-ytjf-cli-skeleton-and-box-resolution.md)
-- [Read the box spec and apply the field mapping](261115-ahma-box-spec-and-field-mapping.md)
+- [Read the box spec and apply the field mapping](done/261115-ahma-box-spec-and-field-mapping.md)
 - [Port the slip commands to zk](261115-wfyq-card-commands-at-parity.md)
 - [Build the demo vault and the parity suite](261115-823p-demo-vault-and-parity-suite.md)
 - [Build the zk new terminal UI](261115-ct75-tui-new.md)
@@ -30,7 +30,7 @@ Done when:
 
 ## Next
 
-Work the next child, 261115-ahma (box spec and field mapping).
+Work the next child, 261115-wfyq (the slip commands). It needs a YAML library for front matter, which needs Alexander's approval first (ADR 261115-sbpe lists the allowed dependencies).
 
 ## Log
 

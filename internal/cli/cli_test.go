@@ -91,6 +91,7 @@ func TestConfigReportsDiscoveredBox(t *testing.T) {
 	home := tempHome(t)
 	spec := filepath.Join(home, "vault", "Slip Box", "zk.toml")
 	write(t, spec, "name = \"Slip Box\"\n")
+	write(t, filepath.Join(home, "vault", ".obsidian", "app.json"), "{}")
 	cwd := filepath.Join(home, "vault", "Slip Box", "cards")
 	if err := os.MkdirAll(cwd, 0o755); err != nil {
 		t.Fatal(err)
@@ -100,7 +101,7 @@ func TestConfigReportsDiscoveredBox(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("code %d, stderr %q", code, errOut)
 	}
-	for _, want := range []string{spec, "found walking up from " + cwd, "(none)"} {
+	for _, want := range []string{spec, "found walking up from " + cwd, "(none)", "Slip Box", filepath.Join(home, "vault", "Slip Box", "cards"), "claim, fact, hub"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
@@ -119,7 +120,8 @@ func TestConfigReportsDiscoveredBox(t *testing.T) {
 func TestConfigBoxFlagByName(t *testing.T) {
 	home := tempHome(t)
 	spec := filepath.Join(home, "notes", "box", "zk.toml")
-	write(t, spec, "")
+	write(t, spec, "name = \"Notes\"\n")
+	write(t, filepath.Join(home, "notes", ".obsidian", "app.json"), "{}")
 	write(t, filepath.Join(home, ".config", "zk", "config.toml"), "[boxes.notes]\nspec = \"~/notes/box\"\n")
 
 	code, out, errOut := run(t, home, home, nil, "config", "--box", "notes", "--json")
@@ -127,7 +129,7 @@ func TestConfigBoxFlagByName(t *testing.T) {
 	if code != ExitOK || json.Unmarshal([]byte(out), &rep) != nil {
 		t.Fatalf("code %d, out %q, stderr %q", code, out, errOut)
 	}
-	if rep.Box != "notes" || rep.Step != "flag" || rep.Spec != spec {
+	if rep.Box != "notes" || rep.Step != "flag" || rep.Spec != spec || rep.Name != "Notes" || len(rep.Kinds) != 7 {
 		t.Errorf("got %+v", rep)
 	}
 }
@@ -136,6 +138,16 @@ func TestConfigNoBoxFails(t *testing.T) {
 	home := tempHome(t)
 	code, _, errOut := run(t, home, home, nil, "config")
 	if code != ExitFail || !strings.Contains(errOut, "no box found") {
+		t.Fatalf("code %d, stderr %q", code, errOut)
+	}
+}
+
+func TestConfigInvalidSpecFails(t *testing.T) {
+	home := tempHome(t)
+	write(t, filepath.Join(home, "vault", ".obsidian", "app.json"), "{}")
+	write(t, filepath.Join(home, "vault", "box", "zk.toml"), "cards = \"cards\"\n") // no name
+	code, _, errOut := run(t, home, filepath.Join(home, "vault", "box"), nil, "config")
+	if code != ExitFail || !strings.Contains(errOut, "name is required") {
 		t.Fatalf("code %d, stderr %q", code, errOut)
 	}
 }

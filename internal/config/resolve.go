@@ -51,10 +51,10 @@ type Resolution struct {
 // ErrNoBox is returned when no step finds a box.
 var ErrNoBox = errors.New("no box found")
 
-// specHint is added to every "spec not found" error: Obsidian neither shows
+// SpecHint is added to every "spec not found" error: Obsidian neither shows
 // nor, by default, syncs a .toml file, so a box's spec can be missing on a
 // device without any sign in the app (ADR 261115-0tp4).
-const specHint = "Obsidian does not show .toml files, and Obsidian Sync copies them only when \"other file types\" is on, so the spec may not have reached this device"
+const SpecHint = "Obsidian does not show .toml files, and Obsidian Sync copies them only when \"other file types\" is on, so the spec may not have reached this device"
 
 // Resolve chooses the box: the --box value, then $ZK_BOX, then the nearest
 // spec found walking up from the working directory (stopping at the home
@@ -179,7 +179,7 @@ func specPath(p string) (string, error) {
 
 func specMissing(p string, err error) error {
 	if errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("no spec at %s (%s): %w", p, specHint, fs.ErrNotExist)
+		return fmt.Errorf("no spec at %s (%s): %w", p, SpecHint, fs.ErrNotExist)
 	}
 	return fmt.Errorf("reading %s: %w", p, err)
 }
