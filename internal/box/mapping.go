@@ -221,6 +221,10 @@ type Date struct {
 
 func (d Date) String() string { return d.Time.Format(d.Format.layout()) }
 
+// PlainScalar makes a Date an unquoted scalar in front matter, so Obsidian
+// reads it as a date (frontmatter.Plain).
+func (d Date) PlainScalar() string { return d.String() }
+
 // Card is a card's front matter, in the box's own terms.
 type Card struct {
 	Kind       string
@@ -419,6 +423,11 @@ func (r *reader) date(name string) time.Time {
 	case Date:
 		return v.Time
 	case time.Time:
+		// YAML hands over an unquoted date with no zone as UTC. Box dates are
+		// local wall-clock time, so keep the wall clock.
+		if v.Location() == time.UTC {
+			return time.Date(v.Year(), v.Month(), v.Day(), v.Hour(), v.Minute(), v.Second(), v.Nanosecond(), time.Local)
+		}
 		return v
 	case string:
 		if t, err := time.Parse(time.RFC3339, v); err == nil {
