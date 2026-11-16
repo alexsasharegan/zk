@@ -415,7 +415,7 @@ func TestSources(t *testing.T) {
 		t.Errorf("source done: %q", out)
 	}
 	text := b.read(filepath.Join(b.dir, "sources", "newsrc.md"))
-	if !strings.Contains(text, "zk_status: extracted\n") || !strings.Contains(text, "zk_extracted:\n  - \"1\"\n  - 1a\n") {
+	if !strings.Contains(text, "zk_status: extracted\n") || !strings.Contains(text, "zk_extracted:\n  - \"1\"\n  - \"1a\"\n") {
 		t.Errorf("source page:\n%s", text)
 	}
 	if code, _, _ := b.zk("source", "done", "newsrc", "99"); code != ExitUsage {

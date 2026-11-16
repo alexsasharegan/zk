@@ -1,0 +1,7 @@
+# The demo box. With no [fields] table, every field zk owns is written
+# with a zk_ prefix, so the box collides with nothing else in a vault.
+name = "Slip Box"
+hub = "Slip Box Hub.md"
+base = "Slip Box Base.base"
+cards = "cards"
+sources = "sources"

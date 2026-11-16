@@ -1,0 +1,40 @@
+filters:
+  and:
+    - zk_class == "card"
+formulas:
+  nickname: aliases[0]
+views:
+  - type: table
+    name: All
+    order:
+      - file.name
+      - formula.nickname
+      - zk_kind
+      - zk_status
+    sort:
+      - property: zk_sort
+        direction: ASC
+  - type: table
+    name: Raw
+    filters:
+      and:
+        - zk_status == "raw"
+    order:
+      - file.name
+      - formula.nickname
+      - zk_kind
+    sort:
+      - property: zk_sort
+        direction: ASC
+  - type: table
+    name: Proposed
+    filters:
+      and:
+        - zk_status == "proposed"
+    order:
+      - file.name
+      - formula.nickname
+      - zk_kind
+    sort:
+      - property: zk_sort
+        direction: ASC

@@ -1,0 +1,3 @@
+# Files Obsidian writes when the demo vault is opened.
+workspace*.json
+.trash/
