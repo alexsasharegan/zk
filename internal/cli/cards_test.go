@@ -434,7 +434,7 @@ func TestListAndShow(t *testing.T) {
 	if out := b.ok("list", "--under", "1"); strings.Count(out, "\n") != 2 {
 		t.Errorf("list --under: %q", out)
 	}
-	if out := b.ok("ls", "--tree"); !regexp.MustCompile(`(?m)^  1a\s+raw\s+claim\s+A$`).MatchString(out) {
+	if out := b.ok("ls", "--tree"); !regexp.MustCompile(`(?m)^│   ├── 1a  A  \(claim, raw\)$`).MatchString(out) {
 		t.Errorf("ls --tree:\n%s", out)
 	}
 	out := b.ok("list", "--kind", "claim", "--json")

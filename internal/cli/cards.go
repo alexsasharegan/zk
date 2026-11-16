@@ -210,7 +210,7 @@ func openCard(app *App, where open.Where, path string) error {
 
 func newListCmd(app *App) *cobra.Command {
 	var f box.Filter
-	var tree, asJSON bool
+	var tree, ascii, asJSON bool
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
@@ -229,6 +229,25 @@ func newListCmd(app *App) *cobra.Command {
 				return err
 			}
 			out := cmd.OutOrStdout()
+			if tree && !asJSON {
+				// The root line is the box, or the --under card itself.
+				root := s.Spec.Name
+				if f.Under != "" {
+					if all, err := s.List(box.Filter{}); err == nil {
+						for _, r := range all {
+							if r.Key == f.Under {
+								root = cardLine(r)
+							}
+						}
+					}
+				}
+				glyphs := unicodeBranches
+				if ascii {
+					glyphs = asciiBranches
+				}
+				_, err := fmt.Fprint(out, treeText(drawTree(root, rows, glyphs)))
+				return err
+			}
 			for _, r := range rows {
 				if asJSON {
 					if err := jsonLine(out, r); err != nil {
@@ -236,19 +255,16 @@ func newListCmd(app *App) *cobra.Command {
 					}
 					continue
 				}
-				k := r.Key
-				if tree {
-					k = strings.Repeat("  ", r.Level-1) + k
-				}
-				fmt.Fprintf(out, "%-10s %-9s %-9s %s\n", k, r.Status, r.Kind, r.Title)
+				fmt.Fprintf(out, "%-10s %-9s %-9s %s\n", r.Key, r.Status, r.Kind, r.Title)
 			}
 			return nil
 		},
 	}
 	cmd.Flags().StringVar(&f.Status, "status", "", "only cards with this status (raw, proposed, linked)")
 	cmd.Flags().StringVar(&f.Kind, "kind", "", "only cards of this kind")
-	cmd.Flags().StringVar(&f.Under, "under", "", "only the descendants of this card")
-	cmd.Flags().BoolVar(&tree, "tree", false, "indent by level")
+	cmd.Flags().StringVar(&f.Under, "under", "", "only the descendants of this card (with --tree, drawn under it)")
+	cmd.Flags().BoolVar(&tree, "tree", false, "draw the cards as a tree, like the tree command")
+	cmd.Flags().BoolVar(&ascii, "ascii", false, "with --tree, draw the lines with plain characters")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "one JSON object per card")
 	return cmd
 }
