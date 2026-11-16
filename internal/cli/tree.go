@@ -18,15 +18,22 @@ var (
 	asciiBranches   = branches{mid: "|-- ", last: "`-- ", pipe: "|   ", space: "    "}
 )
 
-// drawTree draws cards (depth first, as zk list returns them) as a tree. A
-// card hangs under its nearest ancestor in rows, so a filtered list still
-// draws true lines; a card with none starts at the left margin.
-func drawTree(rows []box.Row, b branches) []string {
+// cardLine is how one card reads in the tree.
+func cardLine(r box.Row) string {
+	return fmt.Sprintf("%s  %s  (%s, %s)", r.Key, r.Title, r.Kind, r.Status)
+}
+
+// drawTree draws cards (depth first, as zk list returns them) the way the
+// tree command draws a folder: a root line, then every card hanging from
+// it with connector lines, then a count. A card hangs under its nearest
+// ancestor in rows, so a filtered list still draws true lines; the rest
+// hang from the root.
+func drawTree(root string, rows []box.Row, b branches) []string {
 	shown := make(map[string]bool, len(rows))
 	for _, r := range rows {
 		shown[r.Key] = true
 	}
-	children := map[string][]box.Row{} // "" holds the top-level cards
+	children := map[string][]box.Row{} // "" is the root
 	for _, r := range rows {
 		parent := ""
 		for _, a := range key.Ancestors(r.Key) {
@@ -38,31 +45,29 @@ func drawTree(rows []box.Row, b branches) []string {
 		children[parent] = append(children[parent], r)
 	}
 
-	var lines []string
+	lines := []string{root}
 	var walk func(parent, prefix string)
 	walk = func(parent, prefix string) {
 		kids := children[parent]
 		for i, r := range kids {
-			last := i == len(kids)-1
 			branch, next := b.mid, b.pipe
-			if last {
+			if i == len(kids)-1 {
 				branch, next = b.last, b.space
 			}
-			if parent == "" {
-				branch, next = "", ""
-			}
-			lines = append(lines, fmt.Sprintf("%s%s  %s  (%s, %s)", prefix+branch, r.Key, r.Title, r.Kind, r.Status))
+			lines = append(lines, prefix+branch+cardLine(r))
 			walk(r.Key, prefix+next)
 		}
 	}
 	walk("", "")
-	return lines
+
+	noun := "cards"
+	if len(rows) == 1 {
+		noun = "card"
+	}
+	return append(lines, "", fmt.Sprintf("%d %s", len(rows), noun))
 }
 
 // treeText joins drawn lines for output.
 func treeText(lines []string) string {
-	if len(lines) == 0 {
-		return ""
-	}
 	return strings.Join(lines, "\n") + "\n"
 }

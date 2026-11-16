@@ -230,12 +230,13 @@ func newListCmd(app *App) *cobra.Command {
 			}
 			out := cmd.OutOrStdout()
 			if tree && !asJSON {
+				// The root line is the box, or the --under card itself.
+				root := s.Spec.Name
 				if f.Under != "" {
-					// Root the tree at the --under card itself.
 					if all, err := s.List(box.Filter{}); err == nil {
 						for _, r := range all {
 							if r.Key == f.Under {
-								rows = append([]box.Row{r}, rows...)
+								root = cardLine(r)
 							}
 						}
 					}
@@ -244,7 +245,7 @@ func newListCmd(app *App) *cobra.Command {
 				if ascii {
 					glyphs = asciiBranches
 				}
-				_, err := fmt.Fprint(out, treeText(drawTree(rows, glyphs)))
+				_, err := fmt.Fprint(out, treeText(drawTree(root, rows, glyphs)))
 				return err
 			}
 			for _, r := range rows {

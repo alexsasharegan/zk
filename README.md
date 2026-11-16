@@ -51,7 +51,7 @@ Inside a box, `zk` finds the nearest `zk.toml` by walking up from the working di
 | Command | Does |
 |---|---|
 | `zk new [kind] [title...] [--under KEY]` | Make the next card: a new root, or the next child of KEY. On a terminal, with the kind or title left out, it asks. `--open obsidian\|editor\|none`, `--dry-run`, `--agent` (marks an agent-made card) |
-| `zk list` (`ls`) | List cards depth first. `--status`, `--kind`, `--under KEY`; `--tree` draws them like the `tree` command (`--ascii` for plain characters) |
+| `zk list` (`ls`) | List cards depth first. `--status`, `--kind`, `--under KEY`; `--tree` draws them like the `tree` command, under the box's name or the `--under` card, with a count (`--ascii` for plain characters) |
 | `zk show KEY` | A key's level, sort key, tag and file, and the card's links in and out |
 | `zk retitle KEY <title...>` | Change a card's H1 and nickname together. `--links` rewrites old `[[zk-K\|(K) Title]]` links |
 | `zk check` | Check cards and sources against the spec. `--fix` writes derived fields first; `--strict` makes warnings errors |
