@@ -82,11 +82,17 @@ type openedMsg struct {
 }
 
 // The list's colours are the terminal's own (the 16 ANSI colours), so they
-// follow its theme.
+// follow its theme. The cursor's background is a grey a step from the
+// terminal's, lighter on a dark screen and darker on a light one, so the
+// colours on it still read.
 var (
-	selectedStyle = lipgloss.NewStyle().Reverse(true)
-	keyStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("6"))
-	foldStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3"))
+	plainPalette = palette{
+		text: lipgloss.NewStyle(),
+		key:  lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("6")),
+		dim:  dimStyle,
+		fold: lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3")),
+	}
+	cursorPalette = plainPalette.on(lipgloss.AdaptiveColor{Light: "254", Dark: "237"})
 )
 
 // NewListModel builds the interactive list.
@@ -179,6 +185,36 @@ func (m *ListModel) foldAll() {
 	m.layout()
 }
 
+// family calls fn for the card with this key and each card under it.
+func (m *ListModel) family(top string, fn func(key string)) {
+	for _, c := range m.in.Cards {
+		if c.Key == top || cardkey.IsAncestor(top, c.Key) {
+			fn(c.Key)
+		}
+	}
+}
+
+// foldFamily folds the whole family the line is in: every branch under the
+// top card it hangs from. Only that card is left of the family, and the
+// cursor goes to it.
+func (m *ListModel) foldFamily(l listLine) {
+	at := map[int]listLine{}
+	for _, x := range m.lines {
+		at[x.card] = x
+	}
+	for l.parent >= 0 {
+		l = at[l.parent]
+	}
+	m.family(m.in.Cards[l.card].Key, func(k string) { m.folded[k] = true })
+	m.layout()
+}
+
+// unfoldUnder unfolds the card with this key and every branch under it.
+func (m *ListModel) unfoldUnder(top string) {
+	m.family(top, func(k string) { delete(m.folded, k) })
+	m.layout()
+}
+
 // body is how many lines of cards fit in the window.
 func (m ListModel) body() int {
 	h := m.height - 3 // the header, the count line and the keys
@@ -244,6 +280,21 @@ func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.filtering {
 			return m.updateFilter(msg)
+		}
+		if msg.Type == tea.KeyRunes && len(msg.Runes) > 1 && !msg.Paste {
+			// Keys that arrived together, as on a slow line: take them
+			// one at a time, up to one that needs the terminal.
+			for i, r := range msg.Runes {
+				next, cmd := m.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+				m = next.(ListModel)
+				if cmd != nil || m.filtering {
+					if rest := msg.Runes[i+1:]; m.filtering && len(rest) > 0 {
+						return m.updateFilter(tea.KeyMsg{Type: tea.KeyRunes, Runes: rest})
+					}
+					return m, cmd
+				}
+			}
+			return m, nil
 		}
 		return m.updateKey(msg)
 	}
@@ -355,6 +406,14 @@ func (m ListModel) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			m.layout()
 		}
+	case "shift+left", "H":
+		if m.tree && ok {
+			m.foldFamily(line)
+		}
+	case "shift+right", "L":
+		if m.tree && ok {
+			m.unfoldUnder(m.in.Cards[line.card].Key)
+		}
 	case "-":
 		if m.tree {
 			m.foldAll()
@@ -458,41 +517,57 @@ func (m ListModel) fit(s string) string {
 // line draws one card. The key and the title are what the eye looks for,
 // so the key is coloured and the kind, the status and the tree's lines are
 // faint; a fold's count stands out, since it is the only sign that there
-// is more to unfold. The line under the cursor is drawn reversed, plain.
+// is more to unfold. The line under the cursor has a marker and a quiet
+// background across the window, with the same colours on it.
 func (m ListModel) line(i int) string {
 	l := m.lines[i]
 	c := m.in.Cards[l.card]
-	plain, styled := c.Row, styleRow(c)
-	if m.tree {
-		plain, styled = l.prefix+c.Branch, dimStyle.Render(l.prefix)+styleBranch(c)
-		if l.hidden > 0 {
-			fold := fmt.Sprintf(" [+%d]", l.hidden)
-			plain, styled = plain+fold, styled+foldStyle.Render(fold)
-		}
-	}
+	p, mark := plainPalette, "  "
 	if i == m.cursor {
-		return selectedStyle.Render(m.fit("> " + plain))
+		p, mark = cursorPalette, "> "
 	}
-	return m.fit("  " + styled)
+	text := p.text.Render(mark)
+	if m.tree {
+		text += p.dim.Render(l.prefix) + p.branch(c)
+		if l.hidden > 0 {
+			text += p.fold.Render(fmt.Sprintf(" [+%d]", l.hidden))
+		}
+	} else {
+		text += p.row(c)
+	}
+	text = m.fit(text)
+	if pad := m.width - lipgloss.Width(text); pad > 0 && i == m.cursor {
+		text += p.text.Render(strings.Repeat(" ", pad))
+	}
+	return text
 }
 
-// styleRow colours a card's line in the rows. The text is c.Row; if the
-// two ever differ, the row is drawn as given, uncoloured.
-func styleRow(c ListCard) string {
+// palette is the styles of one line: the plain text, the key, the faint
+// parts and a fold's count.
+type palette struct{ text, key, dim, fold lipgloss.Style }
+
+// on is the palette over a background.
+func (p palette) on(bg lipgloss.TerminalColor) palette {
+	return palette{text: p.text.Background(bg), key: p.key.Background(bg), dim: p.dim.Background(bg), fold: p.fold.Background(bg)}
+}
+
+// row colours a card's line in the rows. The text is c.Row; if the two
+// ever differ, the row is drawn as given, in one colour.
+func (p palette) row(c ListCard) string {
 	key, rest, title := fmt.Sprintf("%-10s", c.Key), fmt.Sprintf(" %-9s %-9s ", c.Status, c.Kind), c.Title
 	if key+rest+title != c.Row {
-		return c.Row
+		return p.text.Render(c.Row)
 	}
-	return keyStyle.Render(key) + dimStyle.Render(rest) + title
+	return p.key.Render(key) + p.dim.Render(rest) + p.text.Render(title)
 }
 
-// styleBranch colours a card's text in the tree, in the same way.
-func styleBranch(c ListCard) string {
+// branch colours a card's text in the tree, in the same way.
+func (p palette) branch(c ListCard) string {
 	title, rest := "  "+c.Title+"  ", fmt.Sprintf("(%s, %s)", c.Kind, c.Status)
 	if c.Key+title+rest != c.Branch {
-		return c.Branch
+		return p.text.Render(c.Branch)
 	}
-	return keyStyle.Render(c.Key) + title + dimStyle.Render(rest)
+	return p.key.Render(c.Key) + p.text.Render(title) + p.dim.Render(rest)
 }
 
 // empty is what the list says in place of cards.
@@ -527,15 +602,32 @@ func (m ListModel) keys() string {
 	if m.filtering {
 		return "enter: keep the filter  esc: clear it"
 	}
-	keys := "/: filter  t: tree  "
+	// The hints, and the order they are dropped in when the window is
+	// too narrow for them all: 0 stays, the highest goes first.
+	type hint struct {
+		text string
+		drop int
+	}
+	hints := []hint{{"/: filter", 0}, {"t: tree", 0}}
 	if m.tree {
-		keys = "/: filter  t: rows  left/right: fold  -/+: all  "
+		hints = []hint{{"/: filter", 0}, {"t: rows", 0}, {"left/right: fold", 0}, {"shift: family", 2}, {"-/+: all", 3}}
 	}
-	keys += "enter: open  e: editor  "
+	hints = append(hints, hint{"enter: open", 0}, hint{"e: editor", 4})
 	if m.filter.Value() != "" {
-		keys += "esc: clear the filter  "
+		hints = append(hints, hint{"esc: clear the filter", 1})
 	}
-	return keys + "q: quit"
+	hints = append(hints, hint{"q: quit", 0})
+	for drop := 5; ; drop-- {
+		var kept []string
+		for _, h := range hints {
+			if h.drop < drop {
+				kept = append(kept, h.text)
+			}
+		}
+		if line := strings.Join(kept, "  "); drop == 1 || len(line) <= m.width {
+			return line
+		}
+	}
 }
 
 // RunList runs the interactive list on a terminal until the user quits.

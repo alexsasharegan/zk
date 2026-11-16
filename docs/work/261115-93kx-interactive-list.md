@@ -27,7 +27,7 @@ Done when:
 
 ## Next
 
-The maintainer tried it on his own box ("working beautifully") and asked for colour and fold all, which are built. He looks at those two, then the pull request can be merged and this item closed. Offered, not built: number keys that show the tree to a level.
+Everything asked for is built and the maintainer has tried the list on his own box. He looks at the cursor's background and the shift folds, then the pull request can be merged and this item closed.
 
 ## Log
 
@@ -39,3 +39,4 @@ The maintainer tried it on his own box ("working beautifully") and asked for col
 - 2026-11-16: the maintainer approved the keys as proposed: `/` filters (not type-to-filter, since q quits), `t` switches rows and tree, left/right/space fold, enter opens, `e` opens in the editor, q/esc/ctrl+c quits. Rows, tree and fold are in the glossary.
 - 2026-11-16: built. internal/tree lays the tree out for both `zk list --tree` and the list; internal/tui/search.go is the one card search (zk new's parent step now matches kind and status too); internal/tui/list.go is the model; `App.ListUI` injects it. `zk list` gained `--open obsidian|editor`. A failed open shows a notice that offers `e` in place of the y/N question of ADR 261115-mjrm, since the list has the screen. Driven in tmux on the demo box: fold, filter, the editor round trip and a clean quit all worked; opening in Obsidian was not driven. The list does not reload after the editor closes.
 - 2026-11-16: the maintainer tried it on his own box: it works, and he asked for three things. Built: the key is coloured and the kind, status and tree lines are faint (the cursor's line stays plain, reversed); `-` folds every branch and `+` or `=` unfolds them all, the recursive version he described; the fold count `[+3]` is bold and coloured, since it is the only sign there is more to unfold.
+- 2026-11-16: the maintainer liked the colours and asked for two more things. The cursor's line now keeps its colours on a grey background (256-colour 237 on a dark screen, 254 on a light one) that runs to the window's edge, in place of reverse video. He found number keys for levels a mental load and chose shift instead: shift+left (or H) folds the whole family the cursor is in and goes to its top card; shift+right (or L) unfolds everything under the cursor. `-` and `+` stay. The keys line drops its least needed hints in a narrow window, and keys read together (a slow line, key repeat) are taken one at a time.

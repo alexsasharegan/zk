@@ -72,7 +72,14 @@ func driveList(t *testing.T, m ListModel, msgs ...tea.Msg) ListModel {
 }
 
 // screen is the list as drawn, without styling.
-func screen(m ListModel) []string { return strings.Split(stripANSI(m.View()), "\n") }
+// The cursor's line is padded to the window; the padding is trimmed.
+func screen(m ListModel) []string {
+	lines := strings.Split(stripANSI(m.View()), "\n")
+	for i, l := range lines {
+		lines[i] = strings.TrimRight(l, " ")
+	}
+	return lines
+}
 
 // cursorLine is the line the cursor is on.
 func cursorLine(t *testing.T, m ListModel) string {
@@ -387,18 +394,96 @@ func TestListOpenInTheEditor(t *testing.T) {
 }
 
 // The colours never change the text: a row is what zk list prints, and a
-// line that is not in zk list's layout is drawn as given.
+// line that is not in zk list's layout is drawn as given. The cursor's
+// line has the same text, and its background runs to the window's edge.
 func TestListStylingKeepsTheText(t *testing.T) {
 	c := listCard("1a1", "Time develops flavour", "claim", "proposed")
-	if got := stripANSI(styleRow(c)); got != c.Row {
-		t.Errorf("row: %q, want %q", got, c.Row)
+	for _, p := range []palette{plainPalette, cursorPalette} {
+		if got := stripANSI(p.row(c)); got != c.Row {
+			t.Errorf("row: %q, want %q", got, c.Row)
+		}
+		if got := stripANSI(p.branch(c)); got != c.Branch {
+			t.Errorf("branch: %q, want %q", got, c.Branch)
+		}
 	}
-	if got := stripANSI(styleBranch(c)); got != c.Branch {
-		t.Errorf("branch: %q, want %q", got, c.Branch)
+	odd := c
+	odd.Row, odd.Branch = "1a1 | Time develops flavour", "1a1: Time develops flavour"
+	if got := stripANSI(plainPalette.row(odd)); got != odd.Row {
+		t.Errorf("another layout is left alone: %q", got)
 	}
-	c.Row, c.Branch = "1a1 | Time develops flavour", "1a1: Time develops flavour"
-	if styleRow(c) != c.Row || styleBranch(c) != c.Branch {
-		t.Errorf("another layout is left alone: %q %q", styleRow(c), styleBranch(c))
+	if got := stripANSI(plainPalette.branch(odd)); got != odd.Branch {
+		t.Errorf("another layout is left alone: %q", got)
+	}
+
+	m := driveList(t, newListEnv().start(), size(70, 10), down())
+	for i, l := range strings.Split(stripANSI(m.View()), "\n")[2:8] {
+		if n := len([]rune(l)); (i == 1) != (n == 70) {
+			t.Errorf("only the cursor's line runs to the edge: line %d is %d wide: %q", i, n, l)
+		}
+	}
+}
+
+// Shift+left folds the whole family the cursor is in and goes to its top
+// card; shift+right unfolds everything under the cursor.
+func TestListFoldFamily(t *testing.T) {
+	e := newListEnv()
+	e.in.Tree = true
+	e.in.Cards = append(e.in.Cards, listCard("2a", "Steam", "idea", "raw"), listCard("2a1", "Dutch ovens", "idea", "raw"))
+	all := "1 1a 1a1 1a2 1b 2 2a 2a1"
+	m := driveList(t, e.start(), size(100, 20), down(), down(), key(tea.KeyShiftLeft)) // on 1a1
+	if cards(m) != "1 2 2a 2a1" || cursorLine(t, m) != "├── 1  Bread  (hub, linked) [+4]" {
+		t.Errorf("shift+left folds the family and goes to its top: %s\n%s", cards(m), cursorLine(t, m))
+	}
+	if m = driveList(t, m, key(tea.KeyRight)); cards(m) != "1 1a 1b 2 2a 2a1" {
+		t.Errorf("every branch of the family was folded, so right opens one level: %s", cards(m))
+	}
+	if m = driveList(t, m, key(tea.KeyShiftRight)); cards(m) != all {
+		t.Errorf("shift+right unfolds everything under the cursor: %s", cards(m))
+	}
+	// H and L are the same keys. Unfolding under 1a leaves the rest folded.
+	m = driveList(t, m, typed("-"), typed("l"), down(), typed("L"))
+	if cards(m) != "1 1a 1a1 1a2 1b 2" {
+		t.Errorf("L under 1a, with 2 still folded: %s", cards(m))
+	}
+	if m = driveList(t, m, down(), typed("H")); cards(m) != "1 2" || !strings.HasPrefix(cursorLine(t, m), "├── 1  Bread") {
+		t.Errorf("H: %s", cards(m))
+	}
+	// On a top card with nothing under it, and in the rows, they do nothing.
+	m = driveList(t, e.start(), typed("t"), typed("H"), typed("L"))
+	if cards(m) != all {
+		t.Errorf("the rows do not fold: %s", cards(m))
+	}
+}
+
+// Keys read together are taken one at a time, and what follows / is the
+// filter.
+func TestListKeysThatArriveTogether(t *testing.T) {
+	e := newListEnv()
+	m := driveList(t, e.start(), size(100, 20), typed("tjj-"))
+	if cards(m) != "1 2" || !strings.HasSuffix(cursorLine(t, m), "[+4]") {
+		t.Errorf("tjj-: %s\n%s", cards(m), cursorLine(t, m))
+	}
+	if m = driveList(t, e.start(), typed("j/flav")); !m.filtering || cards(m) != "1a1" {
+		t.Errorf("j/flav: filtering %v, %s", m.filtering, cards(m))
+	}
+	if m = driveList(t, e.start(), typed("jq")); !m.quit {
+		t.Error("jq quits")
+	}
+}
+
+// The keys line drops its least needed hints in a narrow window.
+func TestListKeysFitTheWindow(t *testing.T) {
+	e := newListEnv()
+	e.in.Tree = true
+	wide := screen(driveList(t, e.start(), size(120, 10)))[9]
+	for _, want := range []string{"left/right: fold", "shift: family", "-/+: all", "e: editor", "q: quit"} {
+		if !strings.Contains(wide, want) {
+			t.Errorf("a wide window has %q: %q", want, wide)
+		}
+	}
+	narrow := screen(driveList(t, e.start(), size(70, 10)))[9]
+	if len(narrow) > 70 || strings.Contains(narrow, "e: editor") || !strings.HasSuffix(narrow, "q: quit") || !strings.Contains(narrow, "left/right: fold") {
+		t.Errorf("a narrow window keeps the main keys: %q", narrow)
 	}
 }
 

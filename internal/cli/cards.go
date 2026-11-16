@@ -217,8 +217,8 @@ func newListCmd(app *App) *cobra.Command {
 
 On a terminal, zk list opens the interactive list: the cards on a full screen
 that you scroll, filter by typing after /, switch between rows and the tree
-with t, and fold by branch in the tree (left and right for one branch, - and +
-for all of them). Enter opens the card under the cursor in Obsidian, or in the
+with t, and fold by branch in the tree (left and right for one branch, with
+shift for the whole family, - and + for all of them). Enter opens the card under the cursor in Obsidian, or in the
 editor with --open editor, and comes back to the list; e opens it in the
 editor; q, esc or ctrl+c quits.
 
