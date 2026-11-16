@@ -1,16 +1,20 @@
 package cli
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
 	"github.com/alexsasharegan/zk/internal/box"
+	"github.com/alexsasharegan/zk/internal/open"
+	"github.com/alexsasharegan/zk/internal/tui"
 )
 
 // usagef makes a usage error.
@@ -62,7 +66,7 @@ func kindList(s *box.Store) string {
 }
 
 func newNewCmd(app *App) *cobra.Command {
-	var under string
+	var under, openFlag string
 	var dryRun, agent, asJSON bool
 	cmd := &cobra.Command{
 		Use:   "new <kind> <title...>",
@@ -70,11 +74,17 @@ func newNewCmd(app *App) *cobra.Command {
 		Long: `Make the next card. With --under KEY it is KEY's next child (6 gives 6a, 6b;
 6a gives 6a1, 6a2); without, the next root.
 
-The kinds come from the box's spec; zk config lists them, and a call without a
-kind prints them with what each means. With every argument given, zk new never
-prompts.`,
-		Example: `  zk new idea Taste is deletion
-  zk new claim "Judges decide" --under 5
+The kinds come from the box's spec; zk config lists them. On a terminal, with
+the kind or the title left out, zk new asks for them: a kind, a title, then a
+parent. With every argument given, it never prompts.
+
+--open says where the new card opens: obsidian (the default when zk new asked
+for the card), editor ($VISUAL, else $EDITOR), or none (the default when every
+argument was given). If it cannot be opened, the card stays made; on a terminal
+zk offers the editor instead.`,
+		Example: `  zk new
+  zk new idea Taste is deletion
+  zk new claim "Judges decide" --under 5 --open editor
   zk new idea Another thought --under 6a --dry-run`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -82,25 +92,46 @@ prompts.`,
 			if err != nil {
 				return err
 			}
+			where := open.None
+			if openFlag != "" {
+				if where, err = open.Parse(openFlag); err != nil {
+					return UsageError{err}
+				}
+			}
+			var c box.NewCard
 			if len(args) < 2 {
-				what := "a kind and a title"
-				if len(args) == 1 {
-					what = "a title"
+				if !app.Interactive() {
+					what := "a kind and a title"
+					if len(args) == 1 {
+						what = "a title"
+					}
+					fmt.Fprintf(app.Err, "kinds in this box:\n%s", kindList(s))
+					return usagef("zk new needs %s", what)
 				}
-				fmt.Fprintf(app.Err, "kinds in this box:\n%s", kindList(s))
-				if app.Interactive() {
-					return usagef("zk new needs %s (the terminal UI that asks for them is not built yet)", what)
+				res, err := app.NewUI(uiInput(app, s, args, under))
+				if err != nil {
+					return err
 				}
-				return usagef("zk new needs %s", what)
+				if res.Cancelled {
+					_, err := fmt.Fprintln(cmd.OutOrStdout(), "zk new: cancelled, nothing made")
+					return err
+				}
+				c = box.NewCard{Kind: res.Kind, Title: res.Title, Under: res.Under}
+				if openFlag == "" {
+					where = open.Obsidian
+				}
+			} else {
+				title, err := box.CleanTitle(args[1:])
+				if err != nil {
+					return err
+				}
+				c = box.NewCard{Kind: args[0], Title: title, Under: under}
+				if _, ok := s.Spec.Kinds[c.Kind]; !ok {
+					fmt.Fprintf(app.Err, "kinds in this box:\n%s", kindList(s))
+				}
 			}
-			title, err := box.CleanTitle(args[1:])
-			if err != nil {
-				return err
-			}
-			c := box.NewCard{Kind: args[0], Title: title, Under: under, Agent: agent, Now: app.Now()}
-			if _, ok := s.Spec.Kinds[c.Kind]; !ok {
-				fmt.Fprintf(app.Err, "kinds in this box:\n%s", kindList(s))
-			}
+			c.Agent, c.Now = agent, app.Now()
+
 			var k, p string
 			if dryRun {
 				k, p, err = s.PlanCard(c)
@@ -110,22 +141,71 @@ prompts.`,
 			if err != nil {
 				return err
 			}
+			out := cmd.OutOrStdout()
 			if asJSON {
-				return jsonLine(cmd.OutOrStdout(), map[string]any{"key": k, "path": s.Rel(p), "dry_run": dryRun})
+				err = jsonLine(out, map[string]any{"key": k, "path": s.Rel(p), "dry_run": dryRun})
+			} else if dryRun {
+				_, err = fmt.Fprintln(out, "would make "+s.Rel(p))
+			} else {
+				_, err = fmt.Fprintln(out, s.Rel(p))
 			}
-			prefix := ""
-			if dryRun {
-				prefix = "would make "
+			if err != nil || dryRun {
+				return err
 			}
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), prefix+s.Rel(p))
-			return err
+			return openCard(app, where, p)
 		},
 	}
 	cmd.Flags().StringVar(&under, "under", "", "make it the next child of this card")
+	cmd.Flags().StringVar(&openFlag, "open", "", "where to open the new card: obsidian, editor or none")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the card it would make, and write nothing")
 	cmd.Flags().BoolVar(&agent, "agent", false, "an agent made this card (sets authored_by)")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print one JSON object")
 	return cmd
+}
+
+// uiInput is what the zk new UI needs from the box and the command line.
+func uiInput(app *App, s *box.Store, args []string, under string) tui.Input {
+	reason := app.resolution.Reason
+	if env, err := app.Env(); err == nil && env.Home != "" {
+		reason = strings.ReplaceAll(reason, env.Home+string(filepath.Separator), "~"+string(filepath.Separator))
+	}
+	in := tui.Input{Box: s.Spec.Name, Reason: reason, Under: under, AskParent: under == ""}
+	for _, name := range s.Spec.KindNames() {
+		in.Kinds = append(in.Kinds, tui.Kind{Name: name, Description: s.Spec.Kinds[name].Description})
+	}
+	if rows, err := s.List(box.Filter{}); err == nil {
+		for _, r := range rows {
+			in.Cards = append(in.Cards, tui.Card{Key: r.Key, Title: r.Title, Kind: r.Kind, Level: r.Level})
+		}
+	}
+	if len(args) > 0 {
+		if _, ok := s.Spec.Kinds[args[0]]; ok {
+			in.Kind = args[0]
+		}
+	}
+	return in
+}
+
+// openCard opens a card that has been made. If that fails, the card stays,
+// and on a terminal zk offers the editor instead (ADR 261115-mjrm).
+func openCard(app *App, where open.Where, path string) error {
+	err := app.Opener.Open(where, path)
+	if err == nil {
+		return nil
+	}
+	editor := app.Opener.EditorName()
+	if where == open.Editor || !app.Interactive() || editor == "" {
+		return fmt.Errorf("the card is made, but %w", err)
+	}
+	fmt.Fprintf(app.Err, "The card is made, but %v.\nOpen it in %s instead? [y/N] ", err, editor)
+	answer, _ := bufio.NewReader(app.In).ReadString('\n')
+	if a := strings.ToLower(strings.TrimSpace(answer)); a != "y" && a != "yes" {
+		return nil
+	}
+	if err := app.Opener.Open(open.Editor, path); err != nil {
+		return fmt.Errorf("the card is made, but %w", err)
+	}
+	return nil
 }
 
 func newListCmd(app *App) *cobra.Command {

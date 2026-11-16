@@ -3,6 +3,8 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,6 +13,8 @@ import (
 	"time"
 
 	"github.com/alexsasharegan/zk/internal/config"
+	"github.com/alexsasharegan/zk/internal/open"
+	"github.com/alexsasharegan/zk/internal/tui"
 )
 
 // boxEnv is a vault with a box in it, and a way to run zk inside it.
@@ -20,6 +24,11 @@ type boxEnv struct {
 	dir      string // the box folder
 	terminal bool
 	vars     map[string]string
+	ui       func(tui.Input) (tui.Result, error) // the zk new UI, faked
+	uiInput  tui.Input                           // what the UI was given
+	opened   []string                            // "how path" for each open
+	openErr  map[string]error                    // by "obsidian" or the editor name
+	answer   string                              // typed at the yes or no question
 }
 
 func newBox(t *testing.T, spec string) *boxEnv {
@@ -47,6 +56,26 @@ func (b *boxEnv) zk(args ...string) (int, string, string) {
 		},
 		Now:      func() time.Time { return time.Date(2026, 11, 15, 9, 30, 0, 0, time.Local) },
 		Terminal: func() bool { return b.terminal },
+		In:       strings.NewReader(b.answer),
+		Opener: open.Opener{
+			GOOS:   "darwin",
+			Getenv: func(k string) string { return b.vars[k] },
+			Run: func(name string, args []string, attach bool) error {
+				how := name
+				if name == "open" {
+					how = "obsidian"
+				}
+				b.opened = append(b.opened, how+" "+args[len(args)-1])
+				return b.openErr[how]
+			},
+		},
+		NewUI: func(in tui.Input) (tui.Result, error) {
+			b.uiInput = in
+			if b.ui == nil {
+				b.t.Fatal("the UI ran, but the test gave none")
+			}
+			return b.ui(in)
+		},
 	}
 	code := Run(app, args)
 	return code, out.String(), errb.String()
@@ -159,25 +188,91 @@ func TestNewMissingArgumentsNeverPrompt(t *testing.T) {
 	b := newBox(t, defaultSpec)
 	for _, args := range [][]string{{"new"}, {"new", "idea"}} {
 		code, _, errOut := b.zk(args...)
-		if code != ExitUsage || !strings.Contains(errOut, "kinds in this box") || !strings.Contains(errOut, "first-hand") && !strings.Contains(errOut, "lived through") {
+		if code != ExitUsage || !strings.Contains(errOut, "kinds in this box") || !strings.Contains(errOut, "lived through") {
 			t.Errorf("%v: exit %d, stderr %q", args, code, errOut)
 		}
 	}
 	b.terminal = true
-	if !strings.Contains(func() string { _, _, e := b.zk("new"); return e }(), "terminal UI") {
-		t.Error("on a terminal the message should say the UI is not built yet")
-	}
-	for _, setup := range []func(){
-		func() { b.vars["ZK_NO_INPUT"] = "1" },
-	} {
-		setup()
-		if _, _, e := b.zk("new"); strings.Contains(e, "terminal UI") {
-			t.Error("ZK_NO_INPUT=1 should behave as no terminal")
-		}
+	b.vars["ZK_NO_INPUT"] = "1"
+	if code, _, _ := b.zk("new"); code != ExitUsage {
+		t.Error("ZK_NO_INPUT=1 should behave as no terminal")
 	}
 	delete(b.vars, "ZK_NO_INPUT")
-	if _, _, e := b.zk("new", "--no-input"); strings.Contains(e, "terminal UI") {
+	if code, _, _ := b.zk("new", "--no-input"); code != ExitUsage {
 		t.Error("--no-input should behave as no terminal")
+	}
+}
+
+func TestNewUIOnATerminal(t *testing.T) {
+	b := newBox(t, defaultSpec)
+	b.ok("new", "idea", "One")
+	b.terminal = true
+	b.ui = func(in tui.Input) (tui.Result, error) {
+		return tui.Result{Kind: "question", Title: "Why bread", Under: "1"}, nil
+	}
+	out := b.ok("new")
+	if out != "Slip Box/cards/zk-1a.md\n" {
+		t.Fatalf("got %q", out)
+	}
+	in := b.uiInput
+	if in.Box != "Slip Box" || !strings.HasPrefix(in.Reason, "found walking up") || !in.AskParent || len(in.Kinds) != 7 || len(in.Cards) != 1 || in.Cards[0].Title != "One" {
+		t.Errorf("UI input: %+v", in)
+	}
+	if !strings.Contains(b.read(b.card("1a")), "zk_kind: question") {
+		t.Error("the card was not made from the UI's answers")
+	}
+	if len(b.opened) != 1 || b.opened[0] != "obsidian obsidian://open?path="+strings.ReplaceAll(url.QueryEscape(b.card("1a")), "+", "%20") {
+		t.Errorf("a card made in the UI opens in Obsidian: %v", b.opened)
+	}
+
+	// A kind on the command line goes to the UI; --under skips the parent step.
+	b.ok("new", "claim", "--under", "1", "--open", "none")
+	if b.uiInput.Kind != "claim" || b.uiInput.AskParent || b.uiInput.Under != "1" {
+		t.Errorf("UI input with a kind and --under: %+v", b.uiInput)
+	}
+
+	b.ui = func(tui.Input) (tui.Result, error) { return tui.Result{Cancelled: true}, nil }
+	if out := b.ok("new"); !strings.Contains(out, "cancelled") {
+		t.Errorf("cancel: %q", out)
+	}
+}
+
+func TestNewOpen(t *testing.T) {
+	b := newBox(t, defaultSpec)
+	b.vars["EDITOR"] = "nvim"
+
+	b.ok("new", "idea", "One")
+	if len(b.opened) != 0 {
+		t.Errorf("with every argument given, nothing opens by default: %v", b.opened)
+	}
+	b.ok("new", "idea", "Two", "--open", "editor")
+	if len(b.opened) != 1 || b.opened[0] != "nvim "+b.card("2") {
+		t.Errorf("--open editor: %v", b.opened)
+	}
+	if code, _, _ := b.zk("new", "idea", "X", "--open", "vim"); code != ExitUsage {
+		t.Error("a bad --open is a usage error")
+	}
+
+	// Obsidian fails without a terminal: the card stays, exit 1, no question.
+	b.opened = nil
+	b.openErr = map[string]error{"obsidian": errors.New("no handler")}
+	code, out, errOut := b.zk("new", "idea", "Three", "--open", "obsidian")
+	if code != ExitFail || out != "Slip Box/cards/zk-3.md\n" || !strings.Contains(errOut, "the card is made") || strings.Contains(errOut, "instead?") {
+		t.Errorf("failure without a terminal: %d %q %q", code, out, errOut)
+	}
+
+	// On a terminal, zk asks; yes opens the editor, no leaves it.
+	b.terminal = true
+	b.answer = "y\n"
+	b.opened = nil
+	code, _, errOut = b.zk("new", "idea", "Four", "--open", "obsidian")
+	if code != ExitOK || !strings.Contains(errOut, "Open it in nvim instead? [y/N]") || len(b.opened) != 2 || b.opened[1] != "nvim "+b.card("4") {
+		t.Errorf("yes: %d %q %v", code, errOut, b.opened)
+	}
+	b.answer = "\n"
+	b.opened = nil
+	if code, _, _ := b.zk("new", "idea", "Five", "--open", "obsidian"); code != ExitOK || len(b.opened) != 1 {
+		t.Errorf("the default answer is no: %d %v", code, b.opened)
 	}
 }
 
