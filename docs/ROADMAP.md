@@ -5,6 +5,7 @@
 ## Next
 
 - [261115-h674](work/261115-h674-zk-init.md) Make a new box with `zk init`.
+- [261115-93kx](work/261115-93kx-list-browser.md) Browse the box with `zk list` on a terminal (ADR 261115-9pqw, proposed; blocked until it is accepted).
 
 ## Later
 
