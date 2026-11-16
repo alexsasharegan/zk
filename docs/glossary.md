@@ -1,6 +1,6 @@
 # Glossary
 
-The words zk uses, the rules for keys, and how a box is ordered. The fields themselves are in the README ("The box spec") and ADR 261115-0tp4.
+The words zk uses, the rules for keys, how a box is ordered, and what zk shows on a terminal. The fields themselves are in the README ("The box spec") and ADR 261115-0tp4.
 
 ## Words
 
@@ -107,6 +107,16 @@ Anything that reads only file names cannot know the order. Numbers sort naturall
 - **Sources** are footnotes that link the source page: `[^1]: [[source-slug]]`.
 - **Links to other cards** are wikilinks: `[[zk-7a1]]` shows the key, and a phrase from the sentence can be the link text: `[[zk-7a1|persistent agents]]`.
 - **`## Connections`** is where each link says why the two cards belong together, one sentence per link.
+
+## On a terminal
+
+How zk looks when a person runs it on a terminal, and what everyone else gets.
+
+| Term                 | Also | Meaning                                                                                                                                                                                                                                                                                                             |
+| -------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **terminal UI**      | TUI  | A full-screen view zk draws in the terminal, built with Bubble Tea. It opens only when stdin and stdout are both terminals and neither `--no-input` nor `ZK_NO_INPUT=1` is given, and only when the command's rule says so: `zk new` opens its terminal UI when the kind or the title is missing (ADR 261115-czb2). |
+| **interactive list** |      | The terminal UI of `zk list`: the cards in a full-screen list you scroll, filter by typing, switch to the tree and fold, and open with enter. Provisional: named before it is built, in work item 261115-93kx and ADR 261115-9pqw (proposed).                                                                       |
+| **plain output**     |      | What a command prints when no terminal UI opens: lines of text, or one JSON object per line with `--json`. Agents and scripts always get plain output.                                                                                                                                                              |
 
 ## From Zettelkasten vocabulary
 

@@ -22,7 +22,7 @@ Done when:
 - [ ] A key switches between rows and the tree, and in the tree a branch folds and unfolds.
 - [ ] Enter opens the card in Obsidian, or in the editor with `--open editor` (ADR 261115-mjrm), and returns to the list; q, esc or ctrl+c quits and leaves the screen clean.
 - [ ] The header names the box and why it was chosen, and the stderr line of ADR 261115-v1yz is printed after the list closes.
-- [ ] Tests cover the interactive list and every plain path, the README describes it, and the maintainer has tried it on his own box.
+- [ ] Tests cover the interactive list and every plain path, the README describes it, the glossary's interactive list entry is no longer marked provisional (and still matches what was built), and the maintainer has tried it on his own box.
 
 ## Next
 
@@ -32,3 +32,4 @@ Blocked until the maintainer accepts or changes ADR 261115-9pqw; then set it rea
 
 - 2026-11-15: filed. The maintainer asked for a pager for `zk list` built on the terminal UI; an interactive list was chosen over `$PAGER` and a Bubble Tea text pager (ADR 261115-9pqw, proposed).
 - 2026-11-15: renamed from "browser" to "interactive list", which the maintainer found clearer.
+- 2026-11-15: the glossary now defines terminal UI, interactive list (provisional) and plain output, so the names come before the code, as the maintainer asked.

@@ -51,6 +51,7 @@ The other long outputs (`zk show`, `zk check`) stay plain text. A `$PAGER` for t
 - Each mode needs a test: the interactive list on a terminal, and the plain output with no terminal, `--json` and `--no-input`.
 - internal/tui gets a second model; the parent search from `zk new` should become a shared piece rather than a copy.
 - No new dependency: `bubbles` already has the list and viewport pieces.
+- The glossary defines terminal UI, interactive list and plain output, so the names are settled before the code. The interactive list entry is marked provisional until it is built.
 
 ## Relations
 
