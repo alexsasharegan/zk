@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -56,6 +57,8 @@ type App struct {
 	Now func() time.Time
 	// Terminal reports whether stdin and stdout are both terminals.
 	Terminal func() bool
+	// ErrTerminal reports whether stderr is a terminal.
+	ErrTerminal func() bool
 	// In is read for a yes or no answer on a terminal.
 	In io.Reader
 	// Opener opens a new card in Obsidian or the editor.
@@ -156,6 +159,8 @@ func newVersionCmd() *cobra.Command {
 func Execute() int {
 	app := &App{Out: os.Stdout, Err: os.Stderr, Env: config.OSEnv, Now: time.Now, Terminal: func() bool {
 		return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
+	}, ErrTerminal: func() bool {
+		return term.IsTerminal(int(os.Stderr.Fd()))
 	}, In: os.Stdin, Opener: open.System(), NewUI: func(in tui.Input) (tui.Result, error) {
 		return tui.Run(in, os.Stdin, os.Stdout)
 	}}
@@ -166,7 +171,14 @@ func Execute() int {
 func Run(app *App, args []string) int {
 	root := NewRoot(app)
 	root.SetArgs(args)
-	err := root.Execute()
+	cmd, err := root.ExecuteC()
+	code := app.report(err)
+	app.noteBox(cmd)
+	return code
+}
+
+// report prints a command's error and returns its exit code.
+func (app *App) report(err error) int {
 	if err == nil {
 		return ExitOK
 	}
@@ -180,6 +192,35 @@ func Run(app *App, args []string) int {
 		return ExitUsage
 	}
 	return ExitFail
+}
+
+// noteBox says on stderr which box a command acted on, when the box was not
+// found from the working directory but chosen by ZK_BOX or the user config's
+// default (ADR 261115-v1yz). It is the last line, so it sits above the prompt
+// however long the output was. A box found walking up from here, or named with
+// --box, needs no note. Only on a terminal, and never with --json.
+func (app *App) noteBox(cmd *cobra.Command) {
+	r := app.resolution
+	if r.Step != config.StepEnv && r.Step != config.StepDefault {
+		return
+	}
+	if app.ErrTerminal == nil || !app.ErrTerminal() {
+		return
+	}
+	if cmd != nil {
+		if f := cmd.Flags().Lookup("json"); f != nil && f.Value.String() == "true" {
+			return
+		}
+	}
+	line := "zk: box"
+	if r.Name != "" {
+		line += " " + r.Name
+	}
+	line += " at " + filepath.Dir(r.Spec) + " (" + r.Reason + ")"
+	if env, err := app.Env(); err == nil && env.Home != "" {
+		line = strings.ReplaceAll(line, env.Home+string(filepath.Separator), "~"+string(filepath.Separator))
+	}
+	fmt.Fprintln(app.Err, line)
 }
 
 // isCobraUsage recognises the errors Cobra returns for an unknown command,
