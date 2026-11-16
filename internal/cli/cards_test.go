@@ -621,10 +621,17 @@ func TestInitCommand(t *testing.T) {
 	out := b.ok("init", "Slip Box")
 	for _, want := range []string{
 		`made the box "Slip Box" at ~/vault/Slip Box`, "wrote zk.toml", "wrote Slip Box Hub.md", "wrote Slip Box Base.base",
-		"made cards/", "made sources/", "added 16 property types", "[boxes.slip-box]", `spec = "~/vault/Slip Box/zk.toml"`,
+		"made cards/", "made sources/", "added 16 property types", "[boxes.slip-box]", `spec = "~/vault/Slip Box/zk.toml"`, "at the top of that file",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("zk init lacks %q:\n%s", want, out)
+		}
+	}
+
+	for _, line := range strings.Split(out, "\n") {
+		// Paths vary in length; the rest of the text must fit 80 columns.
+		if len(line) > 80 && !strings.Contains(line, "~/vault") {
+			t.Errorf("a line passes 80 columns: %q", line)
 		}
 	}
 
@@ -646,5 +653,12 @@ func TestInitCommand(t *testing.T) {
 	}
 	if code, _, _ := b.zk("init", "x", "--name", "a|b"); code != ExitUsage {
 		t.Errorf("a bad name: code %d, want usage", code)
+	}
+	code, _, errOut = b.zk("init", "--box", "Other")
+	if code != ExitUsage || !strings.Contains(errOut, `not --box: zk init "Other"`) {
+		t.Errorf("--box: code %d, %s", code, errOut)
+	}
+	if _, err := os.Stat(filepath.Join(vault, "Other")); err == nil {
+		t.Error("zk init --box made a folder")
 	}
 }

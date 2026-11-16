@@ -33,6 +33,10 @@ or already holds one of those files. It never prompts.`,
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if app.box != "" {
+				// --box names a box that exists; init makes one in a folder.
+				return usagef("zk init takes the folder to make the box in, not --box: zk init %q", app.box)
+			}
 			env, err := app.Env()
 			if err != nil {
 				return err
@@ -72,7 +76,7 @@ or already holds one of those files. It never prompts.`,
 				}
 			}
 			if len(res.Types) > 0 {
-				fmt.Fprintf(out, "added %d property types to %s; reload Obsidian so it reads them\n", len(res.Types), box.TypesFile)
+				fmt.Fprintf(out, "added %d property types to %s\n  reload Obsidian so it reads them\n", len(res.Types), box.TypesFile)
 			}
 			for _, c := range res.Conflicts {
 				fmt.Fprintf(out, "warning: %s is %s in Obsidian, the box wants %s; zk check will report it\n", c.Name, c.Have, c.Want)
@@ -85,8 +89,10 @@ it in the user config (zk config says where that is):
   [boxes.%s]
   spec = %q
 
-and add default = %q there to use it when no box is found from the working
-directory.
+To make it the box zk uses when none is found from the working directory,
+put this line at the top of that file, above every [boxes...] table:
+
+  default = %q
 `, key, home(s.Path), key)
 			return nil
 		},
