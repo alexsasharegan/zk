@@ -1,6 +1,6 @@
 # Slip Box Hub
 
-The entrance to the demo slip box. Everything an agent needs is here in plain text; the views below are embedded from the base.
+The entrance to this slip box. Everything an agent needs is here in plain text; the views below are embedded from the base.
 
 ## What is here
 

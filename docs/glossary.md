@@ -24,6 +24,7 @@ The words zk uses, the rules for keys, how a box is ordered, and what zk shows o
 | **source**     |              | A page for one thing read or heard: an article, a video, a book, a conversation. Cards that come from it link to it.                                                                                                |
 | **provenance** |              | Where a source comes from: a URL, a link to another note in the vault, or a description ("a notebook from a class").                                                                                                |
 | **harvest**    |              | Turning a source into cards: cut it into the pieces that carry a meaning, leave the filler on the source page, then place each piece in the tree and link it with a reason. A source is `extracted` once harvested. |
+| **base**       |              | The Obsidian base (`<name> Base.base`) over the box's cards, with the views All, Raw and Proposed, sorted by the sort key. `zk init` writes it.                                                                     |
 | **hub**        |              | The note beside the base that explains the box and embeds the base's views. Not the same as a hub card.                                                                                                             |
 | **trail**      | walk         | An ordered sequence of cards chosen for one piece of writing. Reserved: zk has no trail commands yet. The word follows the trails of Vannevar Bush's 1945 memex.                                                    |
 

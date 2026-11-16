@@ -240,3 +240,24 @@ func TestParity(t *testing.T) {
 	b.edit(b.card("6"), func(s string) string { return strings.Replace(s, `zk_key: "6"`, "zk_key: 6", 1) })
 	step("an unquoted key is flagged", has(expectFail("check"), "quote the key"))
 }
+
+// TestDemoVaultIsWhatInitWrites keeps the demo box's spec, hub and base the
+// files zk init writes (ADR 261115-j835).
+func TestDemoVaultIsWhatInitWrites(t *testing.T) {
+	b := copyDemo(t)
+	fresh := filepath.Join(b.vault, "Fresh", "Slip Box")
+	b.ok("init", fresh)
+	for _, f := range []string{"zk.toml", "Slip Box Hub.md", "Slip Box Base.base"} {
+		want, err := os.ReadFile(filepath.Join(demoVault, "Slip Box", f))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(filepath.Join(fresh, f))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != string(want) {
+			t.Errorf("%s differs from what zk init writes; regenerate the demo with zk init", f)
+		}
+	}
+}

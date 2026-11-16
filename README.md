@@ -48,6 +48,17 @@ zk new idea "Steam makes the crust" --under 2a --dry-run
 
 Inside a box, `zk` finds the nearest `zk.toml` by walking up from the working directory, so no setup is needed.
 
+## Start a box
+
+Open the vault in Obsidian once, so it has a `.obsidian/` folder, then:
+
+```sh
+cd ~/my-vault
+zk init "Slip Box"            # or: zk init "Areas/Notes" --name notes
+```
+
+`zk init` writes `zk.toml`, `Slip Box Hub.md` and `Slip Box Base.base`, makes the `cards` and `sources` folders, and sets the property types of zk's fields in Obsidian (reload Obsidian afterwards). It refuses, writing nothing, outside a vault, inside another box or around one, or when one of those files exists, so running it twice is safe. It ends by showing how to name the box in the user config. The new box uses zk's `zk_` field names; to map them onto your vault's own fields, edit `zk.toml` and the base (see "The box spec").
+
 ## Commands
 
 | Command | Does |
@@ -60,6 +71,7 @@ Inside a box, `zk` finds the nearest `zk.toml` by walking up from the working di
 | `zk fix [KEY...]` | Write derived fields: key, level, sort, tag, and the nickname from the H1 |
 | `zk source new <slug> --provenance P` | Make a source page. `--title`, `--author`, `--via`, `--form` |
 | `zk source done <slug> KEY...` | Mark a source extracted, with the cards it made |
+| `zk init [folder]` | Make a new box in a folder of a vault: spec, hub, base, folders and property types. `--name` (default: the folder's name). Never overwrites |
 | `zk config` | The chosen box, why, and what its spec says |
 
 Every listing command takes `--json` and prints one JSON object per line. Exit codes: 0 success, 1 findings or a failed operation, 2 a usage error.

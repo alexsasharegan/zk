@@ -1,7 +1,22 @@
-# The demo box. With no [fields] table, every field zk owns is written
-# with a zk_ prefix, so the box collides with nothing else in a vault.
+# The spec of the box "Slip Box", read by zk. Obsidian does not show this
+# file; edit it in a text editor.
 name = "Slip Box"
 hub = "Slip Box Hub.md"
 base = "Slip Box Base.base"
 cards = "cards"
 sources = "sources"
+
+# With [fields] empty, every field zk writes has a zk_ prefix (zk_kind,
+# zk_status, zk_created), so the box collides with nothing else in the
+# vault. To write onto fields the vault already has, map them below, one
+# line per field, zk's name = the vault's name. For example:
+#
+#   kind = "kind"
+#   created = { name = "created_at", format = "date" }
+#
+# zk can map author, authored_by, class, created, extracted, form, key,
+# kind, level, provenance, published, series, sort, status, title, via.
+# created and published take a format, "date" or "datetime". A mapped
+# field needs the same name in the base, and `zk check --fix-types` to
+# set its type in Obsidian.
+[fields]

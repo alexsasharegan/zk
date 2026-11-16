@@ -608,3 +608,57 @@ func TestCheckPropertyTypes(t *testing.T) {
 		t.Errorf("--json lacks the finding:\n%s", out)
 	}
 }
+
+func TestInitCommand(t *testing.T) {
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	vault := filepath.Join(root, "vault")
+	write(t, filepath.Join(vault, ".obsidian", "app.json"), "{}")
+	b := &boxEnv{t: t, vault: vault, dir: vault, vars: map[string]string{}}
+
+	out := b.ok("init", "Slip Box")
+	for _, want := range []string{
+		`made the box "Slip Box" at ~/vault/Slip Box`, "wrote zk.toml", "wrote Slip Box Hub.md", "wrote Slip Box Base.base",
+		"made cards/", "made sources/", "added 16 property types", "[boxes.slip-box]", `spec = "~/vault/Slip Box/zk.toml"`, "at the top of that file",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("zk init lacks %q:\n%s", want, out)
+		}
+	}
+
+	for _, line := range strings.Split(out, "\n") {
+		// Paths vary in length; the rest of the text must fit 80 columns.
+		if len(line) > 80 && !strings.Contains(line, "~/vault") {
+			t.Errorf("a line passes 80 columns: %q", line)
+		}
+	}
+
+	b.dir = filepath.Join(vault, "Slip Box")
+	if out := b.ok("check", "--strict"); out != "zk check: nothing found\n" {
+		t.Errorf("a new box should check clean:\n%s", out)
+	}
+	if out := b.ok("new", "idea", "First"); !strings.Contains(out, "zk-1.md") {
+		t.Errorf("zk new in the new box: %s", out)
+	}
+
+	code, _, errOut := b.zk("init")
+	if code != ExitFail || !strings.Contains(errOut, "already a box") {
+		t.Errorf("init twice: code %d, %s", code, errOut)
+	}
+	b.dir = vault
+	if code, _, _ := b.zk("init", "a", "b"); code != ExitUsage {
+		t.Errorf("two folders: code %d, want usage", code)
+	}
+	if code, _, _ := b.zk("init", "x", "--name", "a|b"); code != ExitUsage {
+		t.Errorf("a bad name: code %d, want usage", code)
+	}
+	code, _, errOut = b.zk("init", "--box", "Other")
+	if code != ExitUsage || !strings.Contains(errOut, `not --box: zk init "Other"`) {
+		t.Errorf("--box: code %d, %s", code, errOut)
+	}
+	if _, err := os.Stat(filepath.Join(vault, "Other")); err == nil {
+		t.Error("zk init --box made a folder")
+	}
+}
