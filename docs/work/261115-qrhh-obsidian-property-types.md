@@ -1,11 +1,13 @@
 ---
 id: "261115-qrhh"
 title: Tell Obsidian the types of zk's fields
-status: ready
+status: active
 kind: feature
 created: 2026-11-15
 updated: 2026-11-15
 summary: Obsidian shows zk's dates as text until each property's type is set in the vault; zk should set or check the types of the fields it writes.
+claimed_by: claude-code-opus-5-5
+claimed_at: 2026-11-16T05:18
 ---
 
 # Tell Obsidian the types of zk's fields
@@ -27,3 +29,4 @@ Read Obsidian's types.json format (the demo vault, after opening it in Obsidian)
 ## Log
 
 - 2026-11-15: filed.
+- 2026-11-15 22:18-07:00: claimed (claude-code-opus-5-5).
