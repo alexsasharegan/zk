@@ -1,11 +1,13 @@
 ---
 id: "261115-93kx"
 title: Make zk list interactive on a terminal
-status: ready
+status: active
 kind: feature
 created: 2026-11-15
 updated: 2026-11-15
 summary: On a terminal, zk list opens an interactive list that filters, folds the tree and opens a card; piped or with --json or --no-input it prints as before.
+claimed_by: claude-code-opus-5-5
+claimed_at: 2026-11-16T06:59
 ---
 
 # Make zk list interactive on a terminal
@@ -33,3 +35,4 @@ Read internal/tui/newcard.go and pull its parent search into a shared piece, and
 - 2026-11-15: renamed from "browser" to "interactive list", which the maintainer found clearer.
 - 2026-11-15: the glossary now defines terminal UI, interactive list (provisional) and plain output, so the names come before the code, as the maintainer asked.
 - 2026-11-15: the maintainer accepted ADR 261115-9pqw as written; ready.
+- 2026-11-15 23:59-07:00: claimed (claude-code-opus-5-5).
