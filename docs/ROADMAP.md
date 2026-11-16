@@ -4,7 +4,6 @@
 
 ## Next
 
-- [261115-h674](work/261115-h674-zk-init.md) Make a new box with `zk init`.
 - [261115-93kx](work/261115-93kx-interactive-list.md) Make `zk list` interactive on a terminal (ADR 261115-9pqw).
 
 ## Later
