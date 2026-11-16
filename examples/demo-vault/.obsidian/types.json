@@ -1,0 +1,20 @@
+{
+  "types": {
+    "zk_author": "text",
+    "zk_authored_by": "text",
+    "zk_class": "text",
+    "zk_created": "datetime",
+    "zk_extracted": "multitext",
+    "zk_form": "text",
+    "zk_key": "text",
+    "zk_kind": "text",
+    "zk_level": "number",
+    "zk_provenance": "text",
+    "zk_published": "date",
+    "zk_series": "text",
+    "zk_sort": "text",
+    "zk_status": "text",
+    "zk_title": "text",
+    "zk_via": "text"
+  }
+}

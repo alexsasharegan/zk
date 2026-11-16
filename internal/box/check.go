@@ -27,8 +27,9 @@ type Finding struct {
 	Fixable bool   `json:"fixable"` // zk check --fix repairs it
 }
 
-// Check checks the box's cards and sources. With strict, a duplicate
-// nickname or a skipped key is an error, not a warning.
+// Check checks the box's cards and sources, and the Obsidian types of its
+// fields. With strict, a duplicate nickname, a skipped key or a missing
+// property type is an error, not a warning.
 func (s *Store) Check(strict bool) []Finding {
 	var out []Finding
 	m := s.Spec.Mapping
@@ -107,6 +108,8 @@ func (s *Store) Check(strict bool) []Finding {
 			add(s.ByKey[ks[0]], ks[0], "nickname", "%q is the nickname of cards %s", nick, strings.Join(ks, ", ")).Warning = !strict
 		}
 	}
+
+	out = append(out, s.checkTypes(strict)...)
 
 	sort.SliceStable(out, func(i, j int) bool {
 		if out[i].Warning != out[j].Warning {

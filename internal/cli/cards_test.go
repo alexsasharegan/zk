@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alexsasharegan/zk/internal/box"
 	"github.com/alexsasharegan/zk/internal/config"
 	"github.com/alexsasharegan/zk/internal/open"
 	"github.com/alexsasharegan/zk/internal/tui"
@@ -41,6 +42,13 @@ func newBox(t *testing.T, spec string) *boxEnv {
 	b.dir = filepath.Join(b.vault, "Slip Box")
 	write(t, filepath.Join(b.vault, ".obsidian", "app.json"), "{}")
 	write(t, filepath.Join(b.dir, "zk.toml"), spec)
+	// Set the property types, as a vault opened in Obsidian and fixed would
+	// have them, so the check is clean. A spec that does not load gets none.
+	if sp, err := box.Load(filepath.Join(b.dir, "zk.toml")); err == nil {
+		if _, _, err := box.AddTypes(b.vault, sp.Mapping.PropertyTypes()); err != nil {
+			t.Fatal(err)
+		}
+	}
 	return b
 }
 
@@ -556,5 +564,47 @@ created = { name = "created_at", format = "date" }
 	}
 	if code, out, _ := b.zk("check"); code != ExitOK {
 		t.Errorf("a raw card in a mapped box passes: %d\n%s", code, out)
+	}
+}
+
+func TestCheckPropertyTypes(t *testing.T) {
+	b := newBox(t, defaultSpec)
+	types := filepath.Join(b.vault, ".obsidian", "types.json")
+	if err := os.Remove(types); err != nil {
+		t.Fatal(err)
+	}
+	code, out, _ := b.zk("check")
+	if code != ExitOK || !strings.Contains(out, "warning: .obsidian/types.json [property-type] zk_created has no type") ||
+		!strings.Contains(out, "16 field(s) with no property type: run `zk check --fix-types`") {
+		t.Fatalf("missing types: code %d\n%s", code, out)
+	}
+	if code, _, _ := b.zk("check", "--strict"); code != ExitFail {
+		t.Error("--strict: a missing type should fail")
+	}
+	if _, err := os.Stat(types); err == nil {
+		t.Fatal("zk check wrote types.json")
+	}
+
+	out = b.ok("check", "--fix-types")
+	for _, want := range []string{"added zk_created: datetime to .obsidian/types.json", "added zk_level: number", "reload Obsidian", "zk check: nothing found"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("--fix-types lacks %q:\n%s", want, out)
+		}
+	}
+
+	b.edit(types, func(s string) string {
+		return strings.Replace(s, `"zk_created": "datetime"`, `"zk_created": "text"`, 1)
+	})
+	code, out, _ = b.zk("check", "--fix-types")
+	if code != ExitFail || !strings.Contains(out, "zk_created is text in Obsidian, the spec wants datetime") || strings.Contains(out, "added") {
+		t.Errorf("a mismatch: code %d\n%s", code, out)
+	}
+	if !strings.Contains(b.read(types), `"zk_created": "text"`) {
+		t.Error("--fix-types changed a type that was set")
+	}
+
+	_, out, _ = b.zk("check", "--json")
+	if !strings.Contains(out, `"rule":"property-type"`) {
+		t.Errorf("--json lacks the finding:\n%s", out)
 	}
 }
