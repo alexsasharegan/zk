@@ -1,19 +1,18 @@
 ---
 id: "261115-93kx"
 title: Make zk list interactive on a terminal
-status: blocked
+status: ready
 kind: feature
 created: 2026-11-15
 updated: 2026-11-15
 summary: On a terminal, zk list opens an interactive list that filters, folds the tree and opens a card; piped or with --json or --no-input it prints as before.
-blocked_by: [261115-9pqw]
 ---
 
 # Make zk list interactive on a terminal
 
 ## Goal
 
-`zk list` on a box of a few hundred cards scrolls its top off the screen. On a terminal it should open an interactive list of the cards instead: a full-screen view you scroll and quit, built on the terminal UI `zk new` already has (ADR 261115-9pqw).
+`zk list` on a box of a few hundred cards scrolls its top off the screen. On a terminal it should open an interactive list of the cards instead: a full-screen view you scroll and quit, built on the terminal UI `zk new` already has (ADR 261115-9pqw, accepted).
 
 Done when:
 
@@ -26,10 +25,11 @@ Done when:
 
 ## Next
 
-Blocked until the maintainer accepts or changes ADR 261115-9pqw; then set it ready. Then read internal/tui/newcard.go and pull its parent search into a shared piece, and design the keys (switching view, folding) before building. Comes after zk init (261115-h674).
+Read internal/tui/newcard.go and pull its parent search into a shared piece, and design the keys (switching view, folding) before building. Comes after zk init (261115-h674).
 
 ## Log
 
 - 2026-11-15: filed. The maintainer asked for a pager for `zk list` built on the terminal UI; an interactive list was chosen over `$PAGER` and a Bubble Tea text pager (ADR 261115-9pqw, proposed).
 - 2026-11-15: renamed from "browser" to "interactive list", which the maintainer found clearer.
 - 2026-11-15: the glossary now defines terminal UI, interactive list (provisional) and plain output, so the names come before the code, as the maintainer asked.
+- 2026-11-15: the maintainer accepted ADR 261115-9pqw as written; ready.

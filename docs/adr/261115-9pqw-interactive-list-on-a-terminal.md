@@ -2,7 +2,7 @@
 id: "261115-9pqw"
 title: zk list is interactive on a terminal
 summary: On a terminal, zk list opens an interactive list that filters, folds the tree and opens cards; piped or with --json or --no-input it prints as before.
-status: proposed
+status: accepted
 date: 2026-11-15
 scope: [zk list, terminal UI, internal/tui]
 authored_by: agent
