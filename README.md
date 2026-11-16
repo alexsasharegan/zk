@@ -29,6 +29,8 @@ my-vault/
 
 A card holds one thought. Its key is its permanent place: `2` is a root, `2a` comments on `2`, `2b` continues `2a`, `2a1` comments on `2a`. A key is never changed or reused. The file is `zk-<key>.md`, and the card carries the tag `zk/2/a`, so the search `tag:#zk/2` finds a card and its whole family.
 
+The words zk uses, the rules for keys and how a box is ordered are in [docs/glossary.md](docs/glossary.md).
+
 Each card has a kind (by default `claim`, `fact`, `idea`, `question`, `quote`, `report` or `hub`) and a status: `raw` (captured), `proposed` (placed and linked, each link with its reason) or `linked` (the owner agrees with its place).
 
 ## Try the demo vault
