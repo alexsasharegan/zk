@@ -18,10 +18,11 @@ type Kind struct {
 	Name, Description string
 }
 
-// Card is an existing card, offered as a parent.
+// Card is an existing card: offered as a parent by zk new, and a line of the
+// interactive list.
 type Card struct {
-	Key, Title, Kind string
-	Level            int
+	Key, Title, Kind, Status string
+	Level                    int
 }
 
 // Input is what the UI needs: the box, its kinds and cards, and anything
@@ -96,7 +97,7 @@ func (p parentItem) FilterValue() string {
 	if p.root {
 		return "new root"
 	}
-	return p.card.Key + " " + p.card.Title
+	return searchText(p.card)
 }
 
 var (
@@ -132,6 +133,7 @@ func NewModel(in Input) Model {
 		parents = append(parents, parentItem{card: c})
 	}
 	m.parents = newList(parents, "Under which card? (/ to search)")
+	m.parents.Filter = cardFilter
 
 	switch {
 	case in.Kind == "":
@@ -306,10 +308,11 @@ func (m Model) View() string {
 	return b.String()
 }
 
-// header names the box and why it was chosen, cut to the window's width.
-func (m Model) header() string {
-	reason := "  (" + m.in.Reason + ")"
-	room := m.width - len("zk new  ") - len([]rune(m.in.Box))
+// header names the command, the box and why it was chosen, cut to the
+// window's width.
+func header(command, box, reason string, width int) string {
+	reason = "  (" + reason + ")"
+	room := width - len(command) - 2 - len([]rune(box))
 	if r := []rune(reason); room < len(r) {
 		if room > 4 {
 			reason = string(r[:room-4]) + "...)"
@@ -317,8 +320,10 @@ func (m Model) header() string {
 			reason = ""
 		}
 	}
-	return headerStyle.Render("zk new") + "  " + m.in.Box + dimStyle.Render(reason)
+	return headerStyle.Render(command) + "  " + box + dimStyle.Render(reason)
 }
+
+func (m Model) header() string { return header("zk new", m.in.Box, m.in.Reason, m.width) }
 
 func (m Model) kind(name string) (Kind, bool) {
 	for _, k := range m.in.Kinds {

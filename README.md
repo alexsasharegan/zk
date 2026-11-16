@@ -1,6 +1,6 @@
 # zk
 
-`zk` runs a Zettelkasten slip box inside an Obsidian vault: cards with permanent Luhmann-style keys (`7a1`), the sources they were harvested from, and the hub note and Obsidian base that show them. It has two modes. With full arguments it is a plain command line that scripts and agents can call without ever being prompted; run on a terminal with something missing, it opens a terminal UI to fill in the rest. It is opinionated about Obsidian. For a general plain-text Zettelkasten tool, see [zk-org/zk](https://github.com/zk-org/zk), which shares the name.
+`zk` runs a Zettelkasten slip box inside an Obsidian vault: cards with permanent Luhmann-style keys (`7a1`), the sources they were harvested from, and the hub note and Obsidian base that show them. It has two modes. With full arguments it is a plain command line that scripts and agents can call without ever being prompted; run on a terminal, it opens a terminal UI to fill in what is missing from `zk new`, and to read the box with `zk list`. It is opinionated about Obsidian. For a general plain-text Zettelkasten tool, see [zk-org/zk](https://github.com/zk-org/zk), which shares the name.
 
 Status: early. The first set of commands and the `zk new` UI are done. The records (work, decisions and the roadmap) live in the AKM layout under `docs/`; start with [AGENTS.md](AGENTS.md).
 
@@ -64,7 +64,7 @@ zk init "Slip Box"            # or: zk init "Areas/Notes" --name notes
 | Command | Does |
 |---|---|
 | `zk new [kind] [title...] [--under KEY]` | Make the next card: a new root, or the next child of KEY. On a terminal, with the kind or title left out, it asks. `--open obsidian\|editor\|none`, `--dry-run`, `--agent` (marks an agent-made card) |
-| `zk list` (`ls`) | List cards depth first. `--status`, `--kind`, `--under KEY`; `--tree` draws them like the `tree` command, under the box's name or the `--under` card, with a count (`--ascii` for plain characters) |
+| `zk list` (`ls`) | List cards depth first. `--status`, `--kind`, `--under KEY`; `--tree` draws them like the `tree` command, under the box's name or the `--under` card, with a count (`--ascii` for plain characters). On a terminal it opens the interactive list; `--open obsidian\|editor` says where enter opens a card |
 | `zk show KEY` | A key's level, sort key, tag and file, and the card's links in and out |
 | `zk retitle KEY <title...>` | Change a card's H1 and nickname together. `--links` rewrites old `[[zk-K\|(K) Title]]` links |
 | `zk check` | Check cards and sources against the spec, and the property types Obsidian gives the box's fields. `--fix` writes derived fields first; `--fix-types` adds missing types to `.obsidian/types.json` first; `--strict` makes warnings errors |
@@ -78,11 +78,33 @@ Every listing command takes `--json` and prints one JSON object per line. Exit c
 
 ### Writing a card by hand
 
-Run `zk new` on a terminal. It shows the box it chose and why, then asks for a kind (each with what it means), a title, and a parent (`/` searches the cards by key or title; the first entry starts a new root). Esc steps back, ctrl+c cancels. The card then opens in Obsidian, through an `obsidian://` link that launches Obsidian when it is closed; `--open editor` uses `$VISUAL`, else `$EDITOR`, instead. If the card cannot be opened, it is still made, and zk asks whether to open it in your editor. `zk new idea` or `zk new --under 2a` skips the steps already answered.
+Run `zk new` on a terminal. It shows the box it chose and why, then asks for a kind (each with what it means), a title, and a parent (`/` searches the cards by key, title, kind or status; the first entry starts a new root). Esc steps back, ctrl+c cancels. The card then opens in Obsidian, through an `obsidian://` link that launches Obsidian when it is closed; `--open editor` uses `$VISUAL`, else `$EDITOR`, instead. If the card cannot be opened, it is still made, and zk asks whether to open it in your editor. `zk new idea` or `zk new --under 2a` skips the steps already answered.
+
+### Reading the box on a terminal
+
+Run `zk list` on a terminal and it opens the interactive list instead of printing: the cards on a full screen, under a header that names the box and why it was chosen. `--status`, `--kind` and `--under` narrow it first, and `--tree` starts it in the tree.
+
+| Key | Does |
+|---|---|
+| up, down, `k`, `j`, page up, page down, `g`, `G` | Move |
+| `/` | Filter: type to keep the cards whose key, title, kind or status match. Enter keeps the filter, esc clears it |
+| `t` | Switch between the rows and the tree |
+| left or `h`, right or `l`, space | In the tree, fold a branch, unfold it, or do whichever applies. A folded card shows how many cards it hides, as `[+3]`; left on a card with nothing to fold goes to its parent |
+| shift+left or `H`, shift+right or `L` | In the tree, fold the whole family the cursor is in and go to its top card; unfold everything under the cursor |
+| `-`, `+` (or `=`) | In the tree, fold every branch, so only the top cards show and each unfold opens one level; unfold every branch |
+| enter | Open the card in Obsidian, or in `$VISUAL`, else `$EDITOR`, with `--open editor`, and come back to the list |
+| `e` | Open the card in the editor |
+| `q`, esc, ctrl+c | Quit. Esc clears a filter first |
+
+The key is coloured and the title is plain, since those are what you look for; the kind, the status and the tree's lines are faint, and a fold's count stands out. The colours are your terminal's own. The line under the cursor has a `>` and a quiet grey background, with the same colours on it.
+
+If a card cannot be opened, the list says why and offers `e`; nothing falls back on its own. Quitting leaves the screen as it was. The list shows the box as it was when it opened: a title changed in the editor shows the next time you run it.
+
+To get the text on a terminal, pass `--no-input` or pipe it (`zk list | cat`). With no terminal, `--json`, `--no-input` or `ZK_NO_INPUT=1`, `zk list` prints what it always has.
 
 ### For scripts and agents
 
-With every argument given, zk never prompts and opens nothing unless `--open` says so. With an argument missing and no terminal, it exits 2 with the usage and never waits for input. `--no-input`, or `ZK_NO_INPUT=1`, makes a terminal behave the same way. Pass `--agent` to `zk new` when an agent makes a card.
+With every argument given, zk never prompts and opens nothing unless `--open` says so. `zk list` opens its interactive list only on a terminal, and never with `--json`. With an argument missing and no terminal, it exits 2 with the usage and never waits for input. `--no-input`, or `ZK_NO_INPUT=1`, makes a terminal behave the same way. Pass `--agent` to `zk new` when an agent makes a card.
 
 ## Configuration
 
