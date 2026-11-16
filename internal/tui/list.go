@@ -81,7 +81,13 @@ type openedMsg struct {
 	err    error
 }
 
-var selectedStyle = lipgloss.NewStyle().Reverse(true)
+// The list's colours are the terminal's own (the 16 ANSI colours), so they
+// follow its theme.
+var (
+	selectedStyle = lipgloss.NewStyle().Reverse(true)
+	keyStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("6"))
+	foldStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("3"))
+)
 
 // NewListModel builds the interactive list.
 func NewListModel(in ListInput) ListModel {
@@ -158,6 +164,19 @@ func (m *ListModel) layout() {
 		}
 	}
 	m.scroll()
+}
+
+// foldAll folds every branch, so the tree shows its top cards only and
+// each unfold opens one level. The cursor goes to the top card it was under.
+func (m *ListModel) foldAll() {
+	m.folded = map[string]bool{}
+	m.layout() // every line, to see which cards have children
+	for _, l := range m.lines {
+		if l.children > 0 {
+			m.folded[m.in.Cards[l.card].Key] = true
+		}
+	}
+	m.layout()
 }
 
 // body is how many lines of cards fit in the window.
@@ -336,6 +355,15 @@ func (m ListModel) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			m.layout()
 		}
+	case "-":
+		if m.tree {
+			m.foldAll()
+		}
+	case "+", "=":
+		if m.tree {
+			m.folded = map[string]bool{}
+			m.layout()
+		}
 	case "enter":
 		if ok && m.in.Open != nil {
 			return m, m.open(m.in.Cards[line.card], false)
@@ -427,21 +455,44 @@ func (m ListModel) fit(s string) string {
 	return lipgloss.NewStyle().Inline(true).MaxWidth(m.width).Render(s)
 }
 
-// line draws one card, marked when the cursor is on it.
+// line draws one card. The key and the title are what the eye looks for,
+// so the key is coloured and the kind, the status and the tree's lines are
+// faint; a fold's count stands out, since it is the only sign that there
+// is more to unfold. The line under the cursor is drawn reversed, plain.
 func (m ListModel) line(i int) string {
 	l := m.lines[i]
 	c := m.in.Cards[l.card]
-	text := c.Row
+	plain, styled := c.Row, styleRow(c)
 	if m.tree {
-		text = l.prefix + c.Branch
+		plain, styled = l.prefix+c.Branch, dimStyle.Render(l.prefix)+styleBranch(c)
 		if l.hidden > 0 {
-			text += fmt.Sprintf(" [+%d]", l.hidden)
+			fold := fmt.Sprintf(" [+%d]", l.hidden)
+			plain, styled = plain+fold, styled+foldStyle.Render(fold)
 		}
 	}
 	if i == m.cursor {
-		return selectedStyle.Render(m.fit("> " + text))
+		return selectedStyle.Render(m.fit("> " + plain))
 	}
-	return m.fit("  " + text)
+	return m.fit("  " + styled)
+}
+
+// styleRow colours a card's line in the rows. The text is c.Row; if the
+// two ever differ, the row is drawn as given, uncoloured.
+func styleRow(c ListCard) string {
+	key, rest, title := fmt.Sprintf("%-10s", c.Key), fmt.Sprintf(" %-9s %-9s ", c.Status, c.Kind), c.Title
+	if key+rest+title != c.Row {
+		return c.Row
+	}
+	return keyStyle.Render(key) + dimStyle.Render(rest) + title
+}
+
+// styleBranch colours a card's text in the tree, in the same way.
+func styleBranch(c ListCard) string {
+	title, rest := "  "+c.Title+"  ", fmt.Sprintf("(%s, %s)", c.Kind, c.Status)
+	if c.Key+title+rest != c.Branch {
+		return c.Branch
+	}
+	return keyStyle.Render(c.Key) + title + dimStyle.Render(rest)
 }
 
 // empty is what the list says in place of cards.
@@ -474,15 +525,15 @@ func (m ListModel) countLine() string {
 // keys is the line of keys at the bottom.
 func (m ListModel) keys() string {
 	if m.filtering {
-		return "enter: keep the filter   esc: clear it"
+		return "enter: keep the filter  esc: clear it"
 	}
-	keys := "/: filter   t: tree   "
+	keys := "/: filter  t: tree  "
 	if m.tree {
-		keys = "/: filter   t: rows   left/right/space: fold   "
+		keys = "/: filter  t: rows  left/right: fold  -/+: all  "
 	}
-	keys += "enter: open   e: editor   "
+	keys += "enter: open  e: editor  "
 	if m.filter.Value() != "" {
-		return keys + "esc: clear the filter   q: quit"
+		keys += "esc: clear the filter  "
 	}
 	return keys + "q: quit"
 }

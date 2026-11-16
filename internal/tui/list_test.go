@@ -132,7 +132,7 @@ func TestListRows(t *testing.T) {
 		t.Errorf("g goes to the top: %q", got)
 	}
 	// Folding keys do nothing in the rows.
-	if m = driveList(t, m, typed(" "), key(tea.KeyLeft)); cards(m) != "1 1a 1a1 1a2 1b 2" {
+	if m = driveList(t, m, typed(" "), key(tea.KeyLeft), typed("-")); cards(m) != "1 1a 1a1 1a2 1b 2" {
 		t.Errorf("rows do not fold: %s", cards(m))
 	}
 }
@@ -259,6 +259,23 @@ func TestListTree(t *testing.T) {
 		t.Errorf("left on a leaf goes to its parent: %q", got)
 	}
 
+	// - folds every branch: the top cards are left, and each unfold opens
+	// one level. + unfolds them all.
+	m = driveList(t, m, typed(" "), down(), typed("-"))
+	if cards(m) != "1 2" || cursorLine(t, m) != "├── 1  Bread  (hub, linked) [+4]" {
+		t.Errorf("- folds all, and the cursor goes up to a card shown: %s\n%s", cards(m), cursorLine(t, m))
+	}
+	if m = driveList(t, m, typed("l")); cards(m) != "1 1a 1b 2" {
+		t.Errorf("after fold all, unfolding opens one level: %s", cards(m))
+	}
+	if m = driveList(t, m, typed("+")); cards(m) != "1 1a 1a1 1a2 1b 2" {
+		t.Errorf("+ unfolds all: %s", cards(m))
+	}
+	if m = driveList(t, driveList(t, m, typed("-")), typed("=")); cards(m) != "1 1a 1a1 1a2 1b 2" {
+		t.Errorf("= unfolds all too: %s", cards(m))
+	}
+	m = driveList(t, m, typed("g"), down())
+
 	// Back in the rows a fold hides nothing, and the cursor keeps its card.
 	m = driveList(t, m, typed(" "), typed("t"))
 	if cards(m) != "1 1a 1a1 1a2 1b 2" || cursorLine(t, m) != e.in.Cards[1].Row {
@@ -366,6 +383,22 @@ func TestListOpenInTheEditor(t *testing.T) {
 	m = driveList(t, e.start(), enter())
 	if m.notice != "Could not open it in nvim: exit status 1." {
 		t.Errorf("the editor failed, so it is not offered again: %q", m.notice)
+	}
+}
+
+// The colours never change the text: a row is what zk list prints, and a
+// line that is not in zk list's layout is drawn as given.
+func TestListStylingKeepsTheText(t *testing.T) {
+	c := listCard("1a1", "Time develops flavour", "claim", "proposed")
+	if got := stripANSI(styleRow(c)); got != c.Row {
+		t.Errorf("row: %q, want %q", got, c.Row)
+	}
+	if got := stripANSI(styleBranch(c)); got != c.Branch {
+		t.Errorf("branch: %q, want %q", got, c.Branch)
+	}
+	c.Row, c.Branch = "1a1 | Time develops flavour", "1a1: Time develops flavour"
+	if styleRow(c) != c.Row || styleBranch(c) != c.Branch {
+		t.Errorf("another layout is left alone: %q %q", styleRow(c), styleBranch(c))
 	}
 }
 

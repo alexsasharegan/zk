@@ -90,9 +90,12 @@ Run `zk list` on a terminal and it opens the interactive list instead of printin
 | `/` | Filter: type to keep the cards whose key, title, kind or status match. Enter keeps the filter, esc clears it |
 | `t` | Switch between the rows and the tree |
 | left or `h`, right or `l`, space | In the tree, fold a branch, unfold it, or do whichever applies. A folded card shows how many cards it hides, as `[+3]`; left on a card with nothing to fold goes to its parent |
+| `-`, `+` (or `=`) | In the tree, fold every branch, so only the top cards show and each unfold opens one level; unfold every branch |
 | enter | Open the card in Obsidian, or in `$VISUAL`, else `$EDITOR`, with `--open editor`, and come back to the list |
 | `e` | Open the card in the editor |
 | `q`, esc, ctrl+c | Quit. Esc clears a filter first |
+
+The key is coloured and the title is plain, since those are what you look for; the kind, the status and the tree's lines are faint, and a fold's count stands out. The colours are your terminal's own.
 
 If a card cannot be opened, the list says why and offers `e`; nothing falls back on its own. Quitting leaves the screen as it was. The list shows the box as it was when it opened: a title changed in the editor shows the next time you run it.
 
