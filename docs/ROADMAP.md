@@ -2,8 +2,6 @@
 
 ## Now
 
-- [261115-p6yp](work/261115-p6yp-box-notice.md) Say on stderr which box was chosen when it was not found from here (ADR 261115-v1yz).
-
 ## Next
 
 - [261115-qrhh](work/261115-qrhh-obsidian-property-types.md) Tell Obsidian the types of zk's fields, so dates show as dates.
