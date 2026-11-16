@@ -2,7 +2,7 @@
 id: "261115-mjrm"
 title: zk new opens the card in Obsidian, or in the editor when asked
 summary: "How zk new opens the card it made. Obsidian by default in the terminal UI, --open to choose, and an asked question instead of a silent fallback."
-status: proposed
+status: accepted
 date: 2026-11-15
 scope: [zk new, opening notes]
 authored_by: agent
