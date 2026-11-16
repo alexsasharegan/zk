@@ -36,3 +36,4 @@ Raw: Alexander picks when to work it. Start with the ADR draft.
 ## Log
 
 - 2026-11-15: filed.
+- 2026-11-15: related: ADR 261115-v1yz (work item 261115-p6yp) prints a stderr line naming the box when the default or `ZK_BOX` chose it. A box this item finds from the vault root should get the same line.

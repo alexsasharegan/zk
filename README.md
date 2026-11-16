@@ -83,7 +83,7 @@ zk acts on the first box found by:
 3. the nearest `zk.toml`, walking up from the working directory and stopping at the home directory
 4. `default` in the user config
 
-`zk config` says which step chose the box.
+`zk config` says which step chose the box. When `ZK_BOX` or the default chose it, every command that opens the box also ends with one line on stderr naming it, for example `zk: box notes at ~/notes/Slip Box (the default in ~/.config/zk/config.toml)`. The line is left out when stderr is not a terminal, and with `--json`.
 
 ### The user config
 
