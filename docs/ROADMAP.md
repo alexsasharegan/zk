@@ -2,8 +2,6 @@
 
 ## Now
 
-- [261115-w9sn](work/261115-w9sn-zk-mvp.md) Build zk to parity with slip: built and in use; its last check waits on the maintainer's box moving into his vault.
-
 ## Next
 
 - [261115-qrhh](work/261115-qrhh-obsidian-property-types.md) Tell Obsidian the types of zk's fields, so dates show as dates.
