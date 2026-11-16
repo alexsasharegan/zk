@@ -1,8 +1,8 @@
 # zk
 
-`zk` runs a Zettelkasten slip box inside an Obsidian vault: cards with permanent Luhmann-style keys (`7a1`), the sources they were harvested from, and the hub note and Obsidian base that show them. It has two modes. With full arguments it is a plain command line that scripts and agents can call without ever being prompted; run interactively with something missing, it will open a terminal UI to fill in the rest (not built yet). It is opinionated about Obsidian. For a general plain-text Zettelkasten tool, see [zk-org/zk](https://github.com/zk-org/zk), which shares the name.
+`zk` runs a Zettelkasten slip box inside an Obsidian vault: cards with permanent Luhmann-style keys (`7a1`), the sources they were harvested from, and the hub note and Obsidian base that show them. It has two modes. With full arguments it is a plain command line that scripts and agents can call without ever being prompted; run on a terminal with something missing, it opens a terminal UI to fill in the rest. It is opinionated about Obsidian. For a general plain-text Zettelkasten tool, see [zk-org/zk](https://github.com/zk-org/zk), which shares the name.
 
-Status: early. The command line works; the terminal UI for `zk new` is next. The records (work, decisions and the roadmap) live in the AKM layout under `docs/`; start with [AGENTS.md](AGENTS.md).
+Status: early. The first set of commands and the `zk new` UI are done. The records (work, decisions and the roadmap) live in the AKM layout under `docs/`; start with [AGENTS.md](AGENTS.md).
 
 ## Install
 
@@ -50,7 +50,7 @@ Inside a box, `zk` finds the nearest `zk.toml` by walking up from the working di
 
 | Command | Does |
 |---|---|
-| `zk new <kind> <title...> [--under KEY]` | Make the next card: a new root, or the next child of KEY. `--dry-run`, `--agent` (marks an agent-made card) |
+| `zk new [kind] [title...] [--under KEY]` | Make the next card: a new root, or the next child of KEY. On a terminal, with the kind or title left out, it asks. `--open obsidian\|editor\|none`, `--dry-run`, `--agent` (marks an agent-made card) |
 | `zk list` (`ls`) | List cards depth first. `--status`, `--kind`, `--under KEY`, `--tree` |
 | `zk show KEY` | A key's level, sort key, tag and file, and the card's links in and out |
 | `zk retitle KEY <title...>` | Change a card's H1 and nickname together. `--links` rewrites old `[[zk-K\|(K) Title]]` links |
@@ -62,9 +62,13 @@ Inside a box, `zk` finds the nearest `zk.toml` by walking up from the working di
 
 Every listing command takes `--json` and prints one JSON object per line. Exit codes: 0 success, 1 findings or a failed operation, 2 a usage error.
 
+### Writing a card by hand
+
+Run `zk new` on a terminal. It shows the box it chose and why, then asks for a kind (each with what it means), a title, and a parent (`/` searches the cards by key or title; the first entry starts a new root). Esc steps back, ctrl+c cancels. The card then opens in Obsidian, through an `obsidian://` link that launches Obsidian when it is closed; `--open editor` uses `$VISUAL`, else `$EDITOR`, instead. If the card cannot be opened, it is still made, and zk asks whether to open it in your editor. `zk new idea` or `zk new --under 2a` skips the steps already answered.
+
 ### For scripts and agents
 
-With every argument given, zk never prompts. With an argument missing and no terminal, it exits 2 with the usage and never waits for input. `--no-input`, or `ZK_NO_INPUT=1`, makes a terminal behave the same way. Pass `--agent` to `zk new` when an agent makes a card.
+With every argument given, zk never prompts and opens nothing unless `--open` says so. With an argument missing and no terminal, it exits 2 with the usage and never waits for input. `--no-input`, or `ZK_NO_INPUT=1`, makes a terminal behave the same way. Pass `--agent` to `zk new` when an agent makes a card.
 
 ## Configuration
 
@@ -131,6 +135,8 @@ The fields zk can map are `class`, `kind`, `key`, `level`, `sort`, `status`, `cr
 ## Troubleshooting
 
 **"no spec at ..." on another device.** Obsidian does not show `.toml` files in its file list, and Obsidian Sync copies them only when "Sync other file types" is on in its settings. A box's `zk.toml` can be missing on a phone or a second computer with no sign in the app. Turn that setting on, or copy the file by hand, then run `zk config` to see where zk looked.
+
+**Obsidian opens, but says the vault or file was not found.** Obsidian only opens files in vaults it knows. Open the vault folder in Obsidian once, or use `--open editor`.
 
 **"not inside an Obsidian vault".** zk looks for a `.obsidian/` folder at or above the box's folder. Open the folder in Obsidian once, or create `.obsidian/`.
 

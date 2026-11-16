@@ -15,6 +15,8 @@ import (
 
 	"github.com/alexsasharegan/zk/internal/box"
 	"github.com/alexsasharegan/zk/internal/config"
+	"github.com/alexsasharegan/zk/internal/open"
+	"github.com/alexsasharegan/zk/internal/tui"
 )
 
 // Exit codes (ADR 261115-sbpe).
@@ -54,6 +56,14 @@ type App struct {
 	Now func() time.Time
 	// Terminal reports whether stdin and stdout are both terminals.
 	Terminal func() bool
+	// In is read for a yes or no answer on a terminal.
+	In io.Reader
+	// Opener opens a new card in Obsidian or the editor.
+	Opener open.Opener
+	// NewUI runs the zk new terminal UI; tests replace it.
+	NewUI func(tui.Input) (tui.Result, error)
+
+	resolution config.Resolution // the box Open chose, and why
 
 	box     string // --box
 	noInput bool   // --no-input
@@ -114,6 +124,7 @@ func (app *App) Open() (*box.Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	app.resolution = r
 	spec, err := box.Load(r.Spec)
 	if err != nil {
 		return nil, err
@@ -145,6 +156,8 @@ func newVersionCmd() *cobra.Command {
 func Execute() int {
 	app := &App{Out: os.Stdout, Err: os.Stderr, Env: config.OSEnv, Now: time.Now, Terminal: func() bool {
 		return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
+	}, In: os.Stdin, Opener: open.System(), NewUI: func(in tui.Input) (tui.Result, error) {
+		return tui.Run(in, os.Stdin, os.Stdout)
 	}}
 	return Run(app, os.Args[1:])
 }
