@@ -1,13 +1,12 @@
 ---
 id: "261115-93kx"
 title: Make zk list interactive on a terminal
-status: active
+status: done
 kind: feature
 created: 2026-11-15
-updated: 2026-11-15
+updated: 2026-11-16
+closed: 2026-11-16
 summary: On a terminal, zk list opens an interactive list that filters, folds the tree and opens a card; piped or with --json or --no-input it prints as before.
-claimed_by: claude-code-opus-5-5
-claimed_at: 2026-11-16T06:59
 ---
 
 # Make zk list interactive on a terminal
@@ -27,7 +26,9 @@ Done when:
 
 ## Next
 
-Everything asked for is built and the maintainer has tried the list on his own box. He looks at the cursor's background and the shift folds, then the pull request can be merged and this item closed.
+## Outcome
+
+On a terminal, zk list opens an interactive list of the box's cards: rows or the tree, a filter that shares one card search with zk new, folds for one branch, a whole family or every branch, and enter or e to open a card in Obsidian or the editor. With no terminal, --json, --no-input or ZK_NO_INPUT=1 the output is unchanged. Merged in pull request 17 (57346ed). The maintainer tried it on his own box. Not done: opening in Obsidian from the list was not driven by the agent, and the list does not reload after the editor closes.
 
 ## Log
 
