@@ -2,7 +2,7 @@
 id: "261115-2a31"
 title: Check Obsidian's property types, and write them only when asked
 summary: zk check compares .obsidian/types.json with the types of zk's fields; --fix-types adds missing entries and never changes one. Read before touching types.json.
-status: proposed
+status: accepted
 date: 2026-11-15
 scope: [check, obsidian, internal/box/types.go]
 authored_by: agent

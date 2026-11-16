@@ -4,7 +4,6 @@
 
 ## Next
 
-- [261115-qrhh](work/261115-qrhh-obsidian-property-types.md) Tell Obsidian the types of zk's fields, so dates show as dates.
 - [261115-h674](work/261115-h674-zk-init.md) Make a new box with `zk init`.
 
 ## Later
