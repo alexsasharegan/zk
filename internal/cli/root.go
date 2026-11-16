@@ -65,6 +65,8 @@ type App struct {
 	Opener open.Opener
 	// NewUI runs the zk new terminal UI; tests replace it.
 	NewUI func(tui.Input) (tui.Result, error)
+	// ListUI runs the interactive list of zk list; tests replace it.
+	ListUI func(tui.ListInput) error
 
 	resolution config.Resolution // the box Open chose, and why
 
@@ -163,6 +165,8 @@ func Execute() int {
 		return term.IsTerminal(int(os.Stderr.Fd()))
 	}, In: os.Stdin, Opener: open.System(), NewUI: func(in tui.Input) (tui.Result, error) {
 		return tui.Run(in, os.Stdin, os.Stdout)
+	}, ListUI: func(in tui.ListInput) error {
+		return tui.RunList(in, os.Stdin, os.Stdout)
 	}}
 	return Run(app, os.Args[1:])
 }

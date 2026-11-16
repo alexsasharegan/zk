@@ -14,6 +14,7 @@ import (
 
 	"github.com/alexsasharegan/zk/internal/box"
 	"github.com/alexsasharegan/zk/internal/open"
+	"github.com/alexsasharegan/zk/internal/tree"
 	"github.com/alexsasharegan/zk/internal/tui"
 )
 
@@ -165,17 +166,13 @@ zk offers the editor instead.`,
 
 // uiInput is what the zk new UI needs from the box and the command line.
 func uiInput(app *App, s *box.Store, args []string, under string) tui.Input {
-	reason := app.resolution.Reason
-	if env, err := app.Env(); err == nil && env.Home != "" {
-		reason = strings.ReplaceAll(reason, env.Home+string(filepath.Separator), "~"+string(filepath.Separator))
-	}
-	in := tui.Input{Box: s.Spec.Name, Reason: reason, Under: under, AskParent: under == ""}
+	in := tui.Input{Box: s.Spec.Name, Reason: app.reason(), Under: under, AskParent: under == ""}
 	for _, name := range s.Spec.KindNames() {
 		in.Kinds = append(in.Kinds, tui.Kind{Name: name, Description: s.Spec.Kinds[name].Description})
 	}
 	if rows, err := s.List(box.Filter{}); err == nil {
 		for _, r := range rows {
-			in.Cards = append(in.Cards, tui.Card{Key: r.Key, Title: r.Title, Kind: r.Kind, Level: r.Level})
+			in.Cards = append(in.Cards, tui.Card{Key: r.Key, Title: r.Title, Kind: r.Kind, Status: r.Status, Level: r.Level})
 		}
 	}
 	if len(args) > 0 {
@@ -210,12 +207,23 @@ func openCard(app *App, where open.Where, path string) error {
 
 func newListCmd(app *App) *cobra.Command {
 	var f box.Filter
-	var tree, ascii, asJSON bool
+	var asTree, ascii, asJSON bool
+	var openFlag string
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List cards depth first",
-		Args:    noArgs,
+		Long: `List cards depth first, or with --tree as a tree.
+
+On a terminal, zk list opens the interactive list: the cards on a full screen
+that you scroll, filter by typing after /, switch between rows and the tree
+with t, and fold by branch in the tree. Enter opens the card under the cursor
+in Obsidian, or in the editor with --open editor, and comes back to the list;
+e opens it in the editor; q, esc or ctrl+c quits.
+
+With no terminal, --json, --no-input or ZK_NO_INPUT=1, zk list prints the
+cards and exits.`,
+		Args: noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := app.Open()
 			if err != nil {
@@ -224,27 +232,36 @@ func newListCmd(app *App) *cobra.Command {
 			if f.Status != "" && !contains(box.CardStatuses, f.Status) {
 				return usagef("--status must be one of %s", strings.Join(box.CardStatuses, ", "))
 			}
+			where := open.Obsidian
+			if openFlag != "" {
+				if where, err = open.Parse(openFlag); err != nil || where == open.None {
+					return usagef("--open must be obsidian or editor, not %q", openFlag)
+				}
+			}
 			rows, err := s.List(f)
 			if err != nil {
 				return err
 			}
-			out := cmd.OutOrStdout()
-			if tree && !asJSON {
-				// The root line is the box, or the --under card itself.
-				root := s.Spec.Name
-				if f.Under != "" {
-					if all, err := s.List(box.Filter{}); err == nil {
-						for _, r := range all {
-							if r.Key == f.Under {
-								root = cardLine(r)
-							}
+			// The tree's root line is the box, or the --under card itself.
+			root := s.Spec.Name
+			if f.Under != "" && (asTree || app.Interactive()) {
+				if all, err := s.List(box.Filter{}); err == nil {
+					for _, r := range all {
+						if r.Key == f.Under {
+							root = cardLine(r)
 						}
 					}
 				}
-				glyphs := unicodeBranches
-				if ascii {
-					glyphs = asciiBranches
-				}
+			}
+			glyphs := tree.Unicode
+			if ascii {
+				glyphs = tree.ASCII
+			}
+			if !asJSON && app.Interactive() && app.ListUI != nil {
+				return app.ListUI(listInput(app, s, rows, root, asTree, glyphs, where))
+			}
+			out := cmd.OutOrStdout()
+			if asTree && !asJSON {
 				_, err := fmt.Fprint(out, treeText(drawTree(root, rows, glyphs)))
 				return err
 			}
@@ -255,7 +272,7 @@ func newListCmd(app *App) *cobra.Command {
 					}
 					continue
 				}
-				fmt.Fprintf(out, "%-10s %-9s %-9s %s\n", r.Key, r.Status, r.Kind, r.Title)
+				fmt.Fprintln(out, rowLine(r))
 			}
 			return nil
 		},
@@ -263,10 +280,47 @@ func newListCmd(app *App) *cobra.Command {
 	cmd.Flags().StringVar(&f.Status, "status", "", "only cards with this status (raw, proposed, linked)")
 	cmd.Flags().StringVar(&f.Kind, "kind", "", "only cards of this kind")
 	cmd.Flags().StringVar(&f.Under, "under", "", "only the descendants of this card (with --tree, drawn under it)")
-	cmd.Flags().BoolVar(&tree, "tree", false, "draw the cards as a tree, like the tree command")
-	cmd.Flags().BoolVar(&ascii, "ascii", false, "with --tree, draw the lines with plain characters")
+	cmd.Flags().BoolVar(&asTree, "tree", false, "draw the cards as a tree, like the tree command")
+	cmd.Flags().BoolVar(&ascii, "ascii", false, "draw the tree's lines with plain characters")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "one JSON object per card")
+	cmd.Flags().StringVar(&openFlag, "open", "", "where enter opens a card in the interactive list: obsidian (the default) or editor")
 	return cmd
+}
+
+// rowLine is how one card reads in the rows of zk list.
+func rowLine(r box.Row) string {
+	return fmt.Sprintf("%-10s %-9s %-9s %s", r.Key, r.Status, r.Kind, r.Title)
+}
+
+// listInput is what the interactive list needs from the box and the command
+// line (ADR 261115-9pqw).
+func listInput(app *App, s *box.Store, rows []box.Row, root string, asTree bool, glyphs tree.Glyphs, where open.Where) tui.ListInput {
+	in := tui.ListInput{Box: s.Spec.Name, Reason: app.reason(), Root: root, Tree: asTree, Glyphs: glyphs,
+		Where: "Obsidian", Attached: where == open.Editor, Editor: app.Opener.EditorName()}
+	if where == open.Editor {
+		in.Where = in.Editor
+	}
+	paths := make(map[string]string, len(rows))
+	for _, r := range rows {
+		paths[r.Key] = s.CardPath(r.Key)
+		in.Cards = append(in.Cards, tui.ListCard{
+			Card:   tui.Card{Key: r.Key, Title: r.Title, Kind: r.Kind, Status: r.Status, Level: r.Level},
+			Row:    rowLine(r),
+			Branch: cardLine(r),
+		})
+	}
+	in.Open = func(c tui.ListCard) error { return app.Opener.Open(where, paths[c.Key]) }
+	in.Edit = func(c tui.ListCard) error { return app.Opener.Open(open.Editor, paths[c.Key]) }
+	return in
+}
+
+// reason is why the box was chosen, with the home directory written ~.
+func (app *App) reason() string {
+	reason := app.resolution.Reason
+	if env, err := app.Env(); err == nil && env.Home != "" {
+		reason = strings.ReplaceAll(reason, env.Home+string(filepath.Separator), "~"+string(filepath.Separator))
+	}
+	return reason
 }
 
 func newShowCmd(app *App) *cobra.Command {

@@ -27,6 +27,8 @@ type boxEnv struct {
 	vars     map[string]string
 	ui       func(tui.Input) (tui.Result, error) // the zk new UI, faked
 	uiInput  tui.Input                           // what the UI was given
+	list     func(tui.ListInput) error           // the interactive list, faked
+	lists    []tui.ListInput                     // what each interactive list was given
 	opened   []string                            // "how path" for each open
 	openErr  map[string]error                    // by "obsidian" or the editor name
 	answer   string                              // typed at the yes or no question
@@ -83,6 +85,13 @@ func (b *boxEnv) zk(args ...string) (int, string, string) {
 				b.t.Fatal("the UI ran, but the test gave none")
 			}
 			return b.ui(in)
+		},
+		ListUI: func(in tui.ListInput) error {
+			b.lists = append(b.lists, in)
+			if b.list == nil {
+				return nil
+			}
+			return b.list(in)
 		},
 	}
 	code := Run(app, args)

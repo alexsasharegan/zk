@@ -6,6 +6,7 @@ import (
 
 	"github.com/alexsasharegan/zk/internal/box"
 	"github.com/alexsasharegan/zk/internal/key"
+	"github.com/alexsasharegan/zk/internal/tree"
 )
 
 func rows(keys ...string) []box.Row {
@@ -19,7 +20,7 @@ func rows(keys ...string) []box.Row {
 // Like the tree command: one root line, every card hanging from it, roots
 // included, then a count.
 func TestDrawTree(t *testing.T) {
-	got := treeText(drawTree("Slip Box", rows("1", "1a", "1a1", "1a2", "1b", "1b1", "2", "2a"), unicodeBranches))
+	got := treeText(drawTree("Slip Box", rows("1", "1a", "1a1", "1a2", "1b", "1b1", "2", "2a"), tree.Unicode))
 	want := `Slip Box
 ├── 1  T1  (idea, raw)
 │   ├── 1a  T1a  (idea, raw)
@@ -38,7 +39,7 @@ func TestDrawTree(t *testing.T) {
 }
 
 func TestDrawTreeASCII(t *testing.T) {
-	got := treeText(drawTree("Box", rows("1", "1a", "2"), asciiBranches))
+	got := treeText(drawTree("Box", rows("1", "1a", "2"), tree.ASCII))
 	want := "Box\n|-- 1  T1  (idea, raw)\n|   `-- 1a  T1a  (idea, raw)\n`-- 2  T2  (idea, raw)\n\n3 cards\n"
 	if got != want {
 		t.Errorf("got:\n%s\nwant:\n%s", got, want)
@@ -48,7 +49,7 @@ func TestDrawTreeASCII(t *testing.T) {
 // With 1a filtered out, its children hang under 1, the nearest shown
 // ancestor; a card with none shown hangs from the root.
 func TestDrawTreeFiltered(t *testing.T) {
-	got := treeText(drawTree("Box", rows("1", "1a1", "1a2", "2a", "2a1"), unicodeBranches))
+	got := treeText(drawTree("Box", rows("1", "1a1", "1a2", "2a", "2a1"), tree.Unicode))
 	want := `Box
 ├── 1  T1  (idea, raw)
 │   ├── 1a1  T1a1  (idea, raw)
@@ -61,10 +62,10 @@ func TestDrawTreeFiltered(t *testing.T) {
 	if got != want {
 		t.Errorf("got:\n%s\nwant:\n%s", got, want)
 	}
-	if got := treeText(drawTree("Box", nil, unicodeBranches)); got != "Box\n\n0 cards\n" {
+	if got := treeText(drawTree("Box", nil, tree.Unicode)); got != "Box\n\n0 cards\n" {
 		t.Errorf("empty: %q", got)
 	}
-	if got := treeText(drawTree("Box", rows("1"), unicodeBranches)); !strings.HasSuffix(got, "\n1 card\n") {
+	if got := treeText(drawTree("Box", rows("1"), tree.Unicode)); !strings.HasSuffix(got, "\n1 card\n") {
 		t.Errorf("one card: %q", got)
 	}
 }
