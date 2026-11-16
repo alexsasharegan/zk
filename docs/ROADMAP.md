@@ -4,8 +4,6 @@
 
 ## Next
 
-- [261115-93kx](work/261115-93kx-interactive-list.md) Make `zk list` interactive on a terminal (ADR 261115-9pqw).
-
 ## Later
 
 Not filed as work items yet:
