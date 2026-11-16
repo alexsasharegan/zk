@@ -56,7 +56,7 @@ Inside a box, `zk` finds the nearest `zk.toml` by walking up from the working di
 | `zk list` (`ls`) | List cards depth first. `--status`, `--kind`, `--under KEY`; `--tree` draws them like the `tree` command, under the box's name or the `--under` card, with a count (`--ascii` for plain characters) |
 | `zk show KEY` | A key's level, sort key, tag and file, and the card's links in and out |
 | `zk retitle KEY <title...>` | Change a card's H1 and nickname together. `--links` rewrites old `[[zk-K\|(K) Title]]` links |
-| `zk check` | Check cards and sources against the spec. `--fix` writes derived fields first; `--strict` makes warnings errors |
+| `zk check` | Check cards and sources against the spec, and the property types Obsidian gives the box's fields. `--fix` writes derived fields first; `--fix-types` adds missing types to `.obsidian/types.json` first; `--strict` makes warnings errors |
 | `zk fix [KEY...]` | Write derived fields: key, level, sort, tag, and the nickname from the H1 |
 | `zk source new <slug> --provenance P` | Make a source page. `--title`, `--author`, `--via`, `--form` |
 | `zk source done <slug> KEY...` | Mark a source extracted, with the cards it made |
@@ -134,6 +134,16 @@ created = { name = "created_at", format = "date" }
 
 The fields zk can map are `class`, `kind`, `key`, `level`, `sort`, `status`, `created` and `authored_by` on cards, and `class`, `title`, `author`, `published`, `provenance`, `via`, `form`, `status`, `created`, `extracted` and `series` on sources. `created` and `published` take a format, `date` or `datetime`. `aliases` and `tags` are Obsidian's own and are never renamed.
 
+### Property types
+
+Obsidian keeps one type per property name for the whole vault, in `.obsidian/types.json`, and guesses until it is told, so a date can show as text. `zk check` compares that file with the types of the box's fields: a date field is `date` or `datetime` by its format, `level` is a number, `extracted` is a list, and the rest are text. A field with no type is a warning; a field set to another type is an error. `zk check` never writes the file.
+
+```sh
+zk check --fix-types   # add the missing types, then check
+```
+
+It adds missing entries only, and never changes a type that is already set, since other notes in the vault may rely on it. Reload Obsidian afterwards (or run it with Obsidian closed): while Obsidian runs it may write its own copy of the file over the new entries.
+
 ## Troubleshooting
 
 **"no spec at ..." on another device.** Obsidian does not show `.toml` files in its file list, and Obsidian Sync copies them only when "Sync other file types" is on in its settings. A box's `zk.toml` can be missing on a phone or a second computer with no sign in the app. Turn that setting on, or copy the file by hand, then run `zk config` to see where zk looked.
@@ -144,4 +154,4 @@ The fields zk can map are `class`, `kind`, `key`, `level`, `sort`, `status`, `cr
 
 **"no box found".** Run zk inside a box, pass `--box`, set `ZK_BOX`, or set `default` in the user config.
 
-**A field shows as the wrong type in Obsidian.** Obsidian keeps one type per property name across the whole vault. If another note uses `kind` or `status` with another meaning, keep zk's `zk_` names, or map onto names your vault uses the same way.
+**A field shows as the wrong type in Obsidian.** Obsidian keeps one type per property name across the whole vault. Run `zk check`: a field with no type is fixed by `zk check --fix-types`. A field set to another type is left for you, because another note may use `kind` or `status` with another meaning: change the type in Obsidian's property menu, keep zk's `zk_` names, or map onto names your vault uses the same way.

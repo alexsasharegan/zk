@@ -370,15 +370,21 @@ func newRetitleCmd(app *App) *cobra.Command {
 var errFindings = errors.New("findings")
 
 func newCheckCmd(app *App) *cobra.Command {
-	var fix, strict, asJSON bool
+	var fix, fixTypes, strict, asJSON bool
 	cmd := &cobra.Command{
 		Use:   "check",
 		Short: "Check cards and sources against the box's spec; exits 1 on an error",
-		Long: `Check cards and sources against the box's spec. Exits 1 on an error; warnings
-(a duplicate nickname, a skipped key) do not fail unless --strict.
+		Long: `Check cards and sources against the box's spec, and the types Obsidian gives
+the box's fields (.obsidian/types.json). Exits 1 on an error; warnings (a
+duplicate nickname, a skipped key, a field with no type) do not fail unless
+--strict. A field Obsidian holds as another type is an error.
 
 With --fix, first write the derived fields (key, level, sort, the key's tag,
-and aliases[0] from the H1), then check.`,
+and aliases[0] from the H1), then check.
+
+With --fix-types, first add the missing types to .obsidian/types.json, then
+check. It never changes a type that is set. Reload Obsidian afterwards, or it
+may write its own copy over the file.`,
 		Args: noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := app.Open()
@@ -399,10 +405,28 @@ and aliases[0] from the H1), then check.`,
 					}
 				}
 			}
+			if fixTypes {
+				want := s.Spec.Mapping.PropertyTypes()
+				added, _, err := box.AddTypes(s.Spec.Vault, want)
+				if err != nil {
+					return err
+				}
+				for _, name := range added {
+					if asJSON {
+						jsonLine(out, map[string]any{"added_type": name, "type": want[name], "path": box.TypesFile})
+					} else {
+						fmt.Fprintf(out, "added %s: %s to %s\n", name, want[name], box.TypesFile)
+					}
+				}
+				if len(added) > 0 && !asJSON {
+					fmt.Fprintln(out, "reload Obsidian so it reads the new types; while it runs it may write its own copy over them")
+				}
+			}
 			return report(app, s, s.Check(strict), asJSON)
 		},
 	}
 	cmd.Flags().BoolVar(&fix, "fix", false, "write the derived fields first")
+	cmd.Flags().BoolVar(&fixTypes, "fix-types", false, "add the missing property types to .obsidian/types.json first")
 	cmd.Flags().BoolVar(&strict, "strict", false, "a duplicate nickname or a skipped key is an error, not a warning")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "one JSON object per finding")
 	return cmd
@@ -413,9 +437,13 @@ func report(app *App, s *box.Store, findings []box.Finding, asJSON bool) error {
 	errs := 0
 	var fixable []string
 	seen := map[string]bool{}
+	missingTypes := 0
 	for _, f := range findings {
 		if !f.Warning {
 			errs++
+		}
+		if f.Rule == "property-type" && f.Fixable {
+			missingTypes++
 		}
 		if f.Fixable && !f.Warning && f.Key != "" && !seen[f.Key] {
 			seen[f.Key] = true
@@ -443,6 +471,9 @@ func report(app *App, s *box.Store, findings []box.Finding, asJSON bool) error {
 				hint += " " + strings.Join(fixable, " ")
 			}
 			fmt.Fprintf(out, "fixable findings in %d card(s): run `%s`\n", len(fixable), hint)
+		}
+		if missingTypes > 0 {
+			fmt.Fprintf(out, "%d field(s) with no property type: run `zk check --fix-types`\n", missingTypes)
 		}
 	}
 	if errs > 0 {
