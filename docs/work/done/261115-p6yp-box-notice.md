@@ -1,12 +1,11 @@
 ---
 id: "261115-p6yp"
 title: Say which box was chosen when it was not found from here
-status: active
+status: done
 kind: feature
 created: 2026-11-15
 updated: 2026-11-15
-claimed_by: claude-code-opus-5-5
-claimed_at: 2026-11-16T03:18
+closed: 2026-11-15
 ---
 
 # Say which box was chosen when it was not found from here
@@ -24,10 +23,13 @@ Done when:
 
 ## Next
 
-Review in the pull request; the ADR is accepted on merge.
-
 ## Log
 
 - 2026-11-15: filed.
 - 2026-11-15: built: `App.noteBox` in `internal/cli/root.go`, called from `Run` after any error; `App.ErrTerminal`; tests in `internal/cli/notice_test.go`.
 - 2026-11-15 20:18-07:00: claimed (claude-code-opus-5-5).
+- 2026-11-15: merged as PR 12; ADR 261115-v1yz is accepted with the merge of the PR that closes this item.
+
+## Outcome
+
+Run outside a box, zk now ends with a stderr line naming the box it used, when `ZK_BOX` or the default chose it.

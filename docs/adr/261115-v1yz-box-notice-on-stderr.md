@@ -2,7 +2,7 @@
 id: "261115-v1yz"
 title: Say on stderr which box was chosen when it was not found from here
 summary: When ZK_BOX or the default chose the box, zk ends with a stderr line naming it, its folder and why. Read before changing output or box resolution.
-status: proposed
+status: accepted
 date: 2026-11-15
 scope: [box resolution, output]
 authored_by: agent
