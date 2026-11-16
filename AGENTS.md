@@ -34,9 +34,12 @@ A Go command-line tool and terminal UI for running a Zettelkasten slip box in an
 - Without the tool, create a record by copying the template in `.agents/skills/*/assets/`, naming the file `<id>-<slug>.md` with the same `id`. Claim an item by making the first `## Log` line `claimed (where)`.
 - Without the tool, close an item by setting `status`, writing `## Outcome`, setting `updated` and moving it to `docs/work/done/` with `git mv`. Never hand-edit the ADR index.
 
+- **After merging a pull request into `main`**, update the maintainer's installed `zk` as the last step of the merge: bring a checkout of `main` up to date (`git fetch` and `git merge --ff-only origin/main`), then run `go install .` there, and check `zk version` names the new commit. It installs to `$GOBIN`, which is on the maintainer's `PATH`. Do it in the same session as the merge; do not set up a scheduled or background job for it.
+
 ## Do not, without asking
 
 - Push a tag, create a release, change repository visibility or settings, or publish.
 - Add a dependency.
+- Set up a launchd job, cron job, or any other scheduled or background task.
 - Put credentials, tokens or private material in any file: the `safety` extension checks known patterns only (add your own to `docs/.akm-deny`).
 - Edit the body of an accepted ADR, or hand-edit `docs/adr/README.md`.
