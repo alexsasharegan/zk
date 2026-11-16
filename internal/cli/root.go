@@ -98,7 +98,7 @@ With every argument given, zk never prompts, so scripts and agents can call it.`
 
 	root.AddCommand(newVersionCmd(), newConfigCmd(app),
 		newNewCmd(app), newListCmd(app), newShowCmd(app), newRetitleCmd(app),
-		newCheckCmd(app), newFixCmd(app), newSourceCmd(app))
+		newCheckCmd(app), newFixCmd(app), newSourceCmd(app), newInitCmd(app))
 	return root
 }
 
