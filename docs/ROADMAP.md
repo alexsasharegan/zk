@@ -2,10 +2,19 @@
 
 ## Now
 
-- [261115-w9sn](work/261115-w9sn-zk-mvp.md) Build zk to parity with slip: design, CLI, box spec, commands, demo vault, then the TUI.
+- [261115-w9sn](work/261115-w9sn-zk-mvp.md) Build zk to parity with slip: built and in use; its last check waits on the maintainer's box moving into his vault.
 
 ## Next
 
+- [261115-qrhh](work/261115-qrhh-obsidian-property-types.md) Tell Obsidian the types of zk's fields, so dates show as dates.
+- [261115-h674](work/261115-h674-zk-init.md) Make a new box with `zk init`.
+
 ## Later
+
+Not filed as work items yet:
+
+- Trails: commands for ordered walks through cards (their fields wait for the first real trail).
+- A user setting for where `zk new` opens a card, besides `--open`.
+- The first tagged release, and install instructions that pin a version.
 
 ## Dropped
