@@ -2,15 +2,28 @@
 
 `zk` runs a Zettelkasten slip box inside an Obsidian vault: cards with permanent Luhmann-style keys (`7a1`), the sources they were harvested from, and the hub note and Obsidian base that show them. It has two modes. With full arguments it is a plain command line that scripts and agents can call without ever being prompted; run on a terminal, it opens a terminal UI to fill in what is missing from `zk new`, and to read the box with `zk list`. It is opinionated about Obsidian. For a general plain-text Zettelkasten tool, see [zk-org/zk](https://github.com/zk-org/zk), which shares the name.
 
-Status: early. The first set of commands and the `zk new` UI are done. The records (work, decisions and the roadmap) live in the AKM layout under `docs/`; start with [AGENTS.md](AGENTS.md).
+Status: early, and used daily on one box. The commands below, `zk init`, and the terminal UI for `zk new` and `zk list` are done. The records (work, decisions and the roadmap) live in the AKM layout under `docs/`; start with [AGENTS.md](AGENTS.md).
 
 ## Install
+
+Download a binary for macOS or Linux from the [latest release](https://github.com/alexsasharegan/zk/releases/latest). Each archive is named `zk_<version>_<os>_<arch>.tar.gz`, where `<os>` is `darwin` (macOS) or `linux` and `<arch>` is `arm64` (Apple silicon, ARM) or `amd64` (Intel, AMD). For example, on an Apple silicon Mac:
+
+```sh
+curl -fsSLO https://github.com/alexsasharegan/zk/releases/download/v0.1.0/zk_v0.1.0_darwin_arm64.tar.gz
+tar -xzf zk_v0.1.0_darwin_arm64.tar.gz
+sudo mv zk_v0.1.0_darwin_arm64/zk /usr/local/bin/
+zk version
+```
+
+`checksums.txt` on the release page lists the SHA-256 of each archive. The macOS binaries are not signed: one downloaded with `curl` runs as it is, but one downloaded with a browser is blocked until you run `xattr -d com.apple.quarantine zk`. There is no Windows build.
+
+Or build it with Go 1.26 or newer:
 
 ```sh
 go install github.com/alexsasharegan/zk@latest
 ```
 
-Go 1.24 or newer.
+`zk version` prints the version either way.
 
 ## How a box is laid out
 
@@ -61,18 +74,18 @@ zk init "Slip Box"            # or: zk init "Areas/Notes" --name notes
 
 ## Commands
 
-| Command | Does |
-|---|---|
-| `zk new [kind] [title...] [--under KEY]` | Make the next card: a new root, or the next child of KEY. On a terminal, with the kind or title left out, it asks. `--open obsidian\|editor\|none`, `--dry-run`, `--agent` (marks an agent-made card) |
-| `zk list` (`ls`) | List cards depth first. `--status`, `--kind`, `--under KEY`; `--tree` draws them like the `tree` command, under the box's name or the `--under` card, with a count (`--ascii` for plain characters). On a terminal it opens the interactive list; `--open obsidian\|editor` says where enter opens a card |
-| `zk show KEY` | A key's level, sort key, tag and file, and the card's links in and out |
-| `zk retitle KEY <title...>` | Change a card's H1 and nickname together. `--links` rewrites old `[[zk-K\|(K) Title]]` links |
-| `zk check` | Check cards and sources against the spec, and the property types Obsidian gives the box's fields. `--fix` writes derived fields first; `--fix-types` adds missing types to `.obsidian/types.json` first; `--strict` makes warnings errors |
-| `zk fix [KEY...]` | Write derived fields: key, level, sort, tag, and the nickname from the H1 |
-| `zk source new <slug> --provenance P` | Make a source page. `--title`, `--author`, `--via`, `--form` |
-| `zk source done <slug> KEY...` | Mark a source extracted, with the cards it made |
-| `zk init [folder]` | Make a new box in a folder of a vault: spec, hub, base, folders and property types. `--name` (default: the folder's name). Never overwrites |
-| `zk config` | The chosen box, why, and what its spec says |
+| Command                                  | Does                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zk new [kind] [title...] [--under KEY]` | Make the next card: a new root, or the next child of KEY. On a terminal, with the kind or title left out, it asks. `--open obsidian\|editor\|none`, `--dry-run`, `--agent` (marks an agent-made card)                                                                                                     |
+| `zk list` (`ls`)                         | List cards depth first. `--status`, `--kind`, `--under KEY`; `--tree` draws them like the `tree` command, under the box's name or the `--under` card, with a count (`--ascii` for plain characters). On a terminal it opens the interactive list; `--open obsidian\|editor` says where enter opens a card |
+| `zk show KEY`                            | A key's level, sort key, tag and file, and the card's links in and out                                                                                                                                                                                                                                    |
+| `zk retitle KEY <title...>`              | Change a card's H1 and nickname together. `--links` rewrites old `[[zk-K\|(K) Title]]` links                                                                                                                                                                                                              |
+| `zk check`                               | Check cards and sources against the spec, and the property types Obsidian gives the box's fields. `--fix` writes derived fields first; `--fix-types` adds missing types to `.obsidian/types.json` first; `--strict` makes warnings errors                                                                 |
+| `zk fix [KEY...]`                        | Write derived fields: key, level, sort, tag, and the nickname from the H1                                                                                                                                                                                                                                 |
+| `zk source new <slug> --provenance P`    | Make a source page. `--title`, `--author`, `--via`, `--form`                                                                                                                                                                                                                                              |
+| `zk source done <slug> KEY...`           | Mark a source extracted, with the cards it made                                                                                                                                                                                                                                                           |
+| `zk init [folder]`                       | Make a new box in a folder of a vault: spec, hub, base, folders and property types. `--name` (default: the folder's name). Never overwrites                                                                                                                                                               |
+| `zk config`                              | The chosen box, why, and what its spec says                                                                                                                                                                                                                                                               |
 
 Every listing command takes `--json` and prints one JSON object per line. Exit codes: 0 success, 1 findings or a failed operation, 2 a usage error.
 
@@ -84,17 +97,17 @@ Run `zk new` on a terminal. It shows the box it chose and why, then asks for a k
 
 Run `zk list` on a terminal and it opens the interactive list instead of printing: the cards on a full screen, under a header that names the box and why it was chosen. `--status`, `--kind` and `--under` narrow it first, and `--tree` starts it in the tree.
 
-| Key | Does |
-|---|---|
-| up, down, `k`, `j`, page up, page down, `g`, `G` | Move |
-| `/` | Filter: type to keep the cards whose key, title, kind or status match. Enter keeps the filter, esc clears it |
-| `t` | Switch between the rows and the tree |
-| left or `h`, right or `l`, space | In the tree, fold a branch, unfold it, or do whichever applies. A folded card shows how many cards it hides, as `[+3]`; left on a card with nothing to fold goes to its parent |
-| shift+left or `H`, shift+right or `L` | In the tree, fold the whole family the cursor is in and go to its top card; unfold everything under the cursor |
-| `-`, `+` (or `=`) | In the tree, fold every branch, so only the top cards show and each unfold opens one level; unfold every branch |
-| enter | Open the card in Obsidian, or in `$VISUAL`, else `$EDITOR`, with `--open editor`, and come back to the list |
-| `e` | Open the card in the editor |
-| `q`, esc, ctrl+c | Quit. Esc clears a filter first |
+| Key                                              | Does                                                                                                                                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| up, down, `k`, `j`, page up, page down, `g`, `G` | Move                                                                                                                                                                           |
+| `/`                                              | Filter: type to keep the cards whose key, title, kind or status match. Enter keeps the filter, esc clears it                                                                   |
+| `t`                                              | Switch between the rows and the tree                                                                                                                                           |
+| left or `h`, right or `l`, space                 | In the tree, fold a branch, unfold it, or do whichever applies. A folded card shows how many cards it hides, as `[+3]`; left on a card with nothing to fold goes to its parent |
+| shift+left or `H`, shift+right or `L`            | In the tree, fold the whole family the cursor is in and go to its top card; unfold everything under the cursor                                                                 |
+| `-`, `+` (or `=`)                                | In the tree, fold every branch, so only the top cards show and each unfold opens one level; unfold every branch                                                                |
+| enter                                            | Open the card in Obsidian, or in `$VISUAL`, else `$EDITOR`, with `--open editor`, and come back to the list                                                                    |
+| `e`                                              | Open the card in the editor                                                                                                                                                    |
+| `q`, esc, ctrl+c                                 | Quit. Esc clears a filter first                                                                                                                                                |
 
 The key is coloured and the title is plain, since those are what you look for; the kind, the status and the tree's lines are faint, and a fold's count stands out. The colours are your terminal's own. The line under the cursor has a `>` and a quiet grey background, with the same colours on it.
 
@@ -177,6 +190,17 @@ zk check --fix-types   # add the missing types, then check
 ```
 
 It adds missing entries only, and never changes a type that is already set, since other notes in the vault may rely on it. Reload Obsidian afterwards (or run it with Obsidian closed): while Obsidian runs it may write its own copy of the file over the new entries.
+
+## Releasing
+
+Pushing a version tag builds the archives and publishes the release (see [the decision](docs/adr/261116-arys-release-binaries.md)):
+
+```sh
+git tag v0.1.0 <commit on main>
+git push origin v0.1.0
+```
+
+A tag with a hyphen, such as `v0.2.0-rc.1`, is published as a prerelease. To build the archives without releasing, run `scripts/release-build.sh v0.1.0`, which writes them to `dist/`. A version cannot be changed once it is published, so fix a bad release with the next version.
 
 ## Troubleshooting
 

@@ -3,3 +3,6 @@ docs/.akm.lock
 
 # the built binary
 /zk
+
+# release archives from scripts/release-build.sh
+/dist/
