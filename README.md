@@ -213,3 +213,7 @@ A tag with a hyphen, such as `v0.2.0-rc.1`, is published as a prerelease. To bui
 **"no box found".** Run zk inside a box, pass `--box`, set `ZK_BOX`, or set `default` in the user config.
 
 **A field shows as the wrong type in Obsidian.** Obsidian keeps one type per property name across the whole vault. Run `zk check`: a field with no type is fixed by `zk check --fix-types`. A field set to another type is left for you, because another note may use `kind` or `status` with another meaning: change the type in Obsidian's property menu, keep zk's `zk_` names, or map onto names your vault uses the same way.
+
+## License
+
+[MIT](LICENSE).

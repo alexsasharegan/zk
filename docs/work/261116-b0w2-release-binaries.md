@@ -27,7 +27,7 @@ Done when:
 
 ## Next
 
-The pull request with the script, the workflow and the README is open. After the maintainer merges it and CI on `main` is green, the tag `v0.1.0` is pushed (his call, or on his word) and the release is checked: four archives, checksums, and `zk version` from a downloaded binary. The repository has no `LICENSE`; he decides whether to add one before the tag.
+The pull request with the script, the workflow and the README is open. After the maintainer merges it and CI on `main` is green, the tag `v0.1.0` is pushed (his call, or on his word) and the release is checked: four archives, checksums, and `zk version` from a downloaded binary. The repository now has an MIT `LICENSE`, which the archives include.
 
 ## Log
 
@@ -35,3 +35,4 @@ The pull request with the script, the workflow and the README is open. After the
 - 2026-11-16: the maintainer asked for release mechanics that build binaries for macOS and Linux, and was unsure about Windows. A script in the repository run by a workflow on a tag push was chosen over GoReleaser and over building by hand (ADR 261116-arys, proposed).
 - 2026-11-16: built. `scripts/release-build.sh` cross-compiles the four targets with the version set through `-ldflags`, and checks that the binary for the machine it runs on prints it. Run on macOS arm64 for v0.1.0: four archives of 2.5 to 2.9 MB, `checksums.txt` verified with `shasum -c`, the darwin/arm64 binary printed `zk v0.1.0`, and `file` showed a static ELF for linux/amd64. `.github/workflows/release.yml` has not run: it runs only on a tag push. The Linux binaries were not executed.
 - 2026-11-16 19:03-07:00: claimed (claude-code-fable-5-2).
+- 2026-11-16: the maintainer merged the pull request (19), which accepts ADR 261116-arys, and chose the MIT license, pushed straight to `main` on his word. He asked for `v0.1.0` to be tagged after it.
