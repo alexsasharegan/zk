@@ -2,7 +2,7 @@
 id: "261116-arys"
 title: Releases are built by a GitHub workflow when a version tag is pushed
 summary: Pushing a version tag runs a workflow that builds macOS and Linux archives with a script in the repository and publishes a GitHub release.
-status: proposed
+status: accepted
 date: 2026-11-16
 scope: [release, .github/workflows, scripts/release-build.sh, install]
 authored_by: agent

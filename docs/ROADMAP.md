@@ -2,8 +2,6 @@
 
 ## Now
 
-- [261116-b0w2](work/261116-b0w2-release-binaries.md) Cut the first release, with binaries for macOS and Linux (ADR 261116-arys).
-
 ## Next
 
 ## Later
